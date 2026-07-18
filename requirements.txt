@@ -16,3 +16,11 @@ shap==0.44.1
 python-multipart==0.0.9
 prometheus_fastapi_instrumentator
 boto3
+# Drift monitoring (Phase 3b). Evidently 0.7.x is used ONLY by the isolated drift worker
+# process (prediction_model/monitoring/drift_worker.py), never imported by the FastAPI serving
+# process — its litestar/multipart dependency conflicts with the pinned python-multipart.
+# `protobuf<5` pins evidently's opentelemetry-proto to a protobuf-4-compatible line so it does
+# not upgrade protobuf past mlflow 2.13.2's `<5` ceiling (verified: the install changes nothing
+# in the existing stack; only additive packages).
+evidently==0.7.21
+protobuf<5

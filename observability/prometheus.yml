@@ -1,0 +1,29 @@
+# Prometheus scrape config for the Fraud Detection API (Phase 3b).
+#
+# The FastAPI app exposes /metrics via prometheus_fastapi_instrumentator. On top of the
+# baseline HTTP/infra metrics, Phase 3b adds custom input-drift gauges (fraud_input_drift_*)
+# to that same endpoint, so a single scrape job covers both.
+#
+# Run locally (not required for this project's verification, which asserts the gauges render
+# on /metrics directly):
+#   prometheus --config.file=observability/prometheus.yml
+#
+# Adjust the target for how the app is reached:
+#   * app + Prometheus both on the host:                localhost:8005
+#   * Prometheus in Docker, app on the Windows host:    host.docker.internal:8005
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Drift alert rules live in a separate file so they can be reviewed on their own.
+rule_files:
+  - "alert_rules.yml"
+
+scrape_configs:
+  - job_name: "fraud-detection-api"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["localhost:8005"]
+        labels:
+          service: "fraud-detection"

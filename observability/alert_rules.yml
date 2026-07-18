@@ -1,0 +1,43 @@
+# Prometheus alerting rules for input-drift on the Fraud Detection model (Phase 3b).
+#
+# Scope (per Decisions Log): this is the DECLARATIVE drift->alert path only — the rule that
+# defines "how would we know the input distribution broke?". Wiring these alerts to a paging
+# channel (Alertmanager routing -> email/Slack/PagerDuty) is intentionally out of scope for
+# this session, and drift->retrain is deferred entirely (a retrain loop needs label latency,
+# champion/challenger gating, and rollback — named as future work).
+#
+# The 0.3 share threshold mirrors config.DRIFT_ALERT_SHARE — keep the two in sync.
+
+groups:
+  - name: fraud_input_drift
+    rules:
+      - alert: FraudInputDatasetDrift
+        # Dataset-level drift the model's own run flagged, held for 10m to avoid flapping on
+        # a single noisy window.
+        expr: fraud_input_drift_dataset_detected == 1
+        for: 10m
+        labels:
+          severity: warning
+          service: fraud-detection
+        annotations:
+          summary: "Fraud model input drift detected (dataset-level)"
+          description: >
+            The share of drifted input columns has stayed above the alert threshold
+            (fraud_input_drift_share = {{ $value }}) for 10m. Live transactions no longer
+            look like the training distribution the model was fit on. Investigate which
+            features drifted (fraud_input_feature_drift_score), and prioritize any that are
+            also high-influence in the SHAP attributions (empirically V14/V10/V4/V12) —
+            drift in features the model leans on most is the likeliest to degrade PR-AUC.
+
+      - alert: FraudInputDriftShareHigh
+        # Fires on the raw share crossing the threshold even if the dataset flag logic changes.
+        expr: fraud_input_drift_share > 0.3
+        for: 10m
+        labels:
+          severity: warning
+          service: fraud-detection
+        annotations:
+          summary: "Fraud model input drift share above 0.3"
+          description: >
+            fraud_input_drift_share = {{ $value }} (> 0.3) for 10m across the monitored
+            V1..V28 + Amount inputs.

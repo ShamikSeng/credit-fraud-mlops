@@ -4,4 +4,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 prediction_model/datasets/*.csv
+# Drift reference is a regenerable build artifact (python -m prediction_model.monitoring.make_reference)
+prediction_model/monitoring/reference_data.csv
 *.md
