@@ -4,13 +4,11 @@
 # baseline HTTP/infra metrics, Phase 3b adds custom input-drift gauges (fraud_input_drift_*)
 # to that same endpoint, so a single scrape job covers both.
 #
-# Run locally (not required for this project's verification, which asserts the gauges render
-# on /metrics directly):
-#   prometheus --config.file=observability/prometheus.yml
-#
-# Adjust the target for how the app is reached:
-#   * app + Prometheus both on the host:                localhost:8005
-#   * Prometheus in Docker, app on the Windows host:    host.docker.internal:8005
+# Run via the Phase 3c docker-compose stack (this file is mounted into the prometheus
+# service): `docker compose up`. The scrape target uses the compose network's service-name
+# resolution — "app" is the fraud-detection-api container, reachable from the prometheus
+# container as `app:8005` (not `localhost:8005`, which would mean the prometheus container
+# itself).
 
 global:
   scrape_interval: 15s
@@ -24,6 +22,6 @@ scrape_configs:
   - job_name: "fraud-detection-api"
     metrics_path: /metrics
     static_configs:
-      - targets: ["localhost:8005"]
+      - targets: ["app:8005"]
         labels:
           service: "fraud-detection"

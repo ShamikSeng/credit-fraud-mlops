@@ -1,5 +1,6 @@
 env/
 mlruns/
+batch_predictions/
 __pycache__/
 *.pyc
 .pytest_cache/

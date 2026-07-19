@@ -15,7 +15,6 @@ xgboost==2.0.3
 shap==0.44.1
 python-multipart==0.0.9
 prometheus_fastapi_instrumentator
-boto3
 # Drift monitoring (Phase 3b). Evidently 0.7.x is used ONLY by the isolated drift worker
 # process (prediction_model/monitoring/drift_worker.py), never imported by the FastAPI serving
 # process — its litestar/multipart dependency conflicts with the pinned python-multipart.

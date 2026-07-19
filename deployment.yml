@@ -16,7 +16,15 @@ spec:
     spec:
       containers:
         - name: mlops
-          image: 637423514597.dkr.ecr.us-east-2.amazonaws.com/mlops:latest
-          imagePullPolicy: Always
+          image: credit-fraud-mlops:latest
+          imagePullPolicy: Never
           ports:
             - containerPort: 8005
+          volumeMounts:
+            - name: mlruns
+              mountPath: /app/mlruns
+      volumes:
+        - name: mlruns
+          hostPath:
+            path: /run/desktop/mnt/host/c/Users/a_sen/Downloads/MLOps_Project/mlruns
+            type: Directory

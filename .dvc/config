@@ -1,4 +1,4 @@
 [core]
-    remote = myremote
-['remote "myremote"']
-    url = s3://loanprediction
+    remote = local
+['remote "local"']
+    url = C:/Users/a_sen/dvc-storage/credit-fraud-mlops

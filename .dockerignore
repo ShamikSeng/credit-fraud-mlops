@@ -1,0 +1,10 @@
+env/
+mlruns/
+.git/
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+prediction_model/datasets/*.csv
+.dvc/cache/
+batch_predictions/
+prediction_model/monitoring/reference_data.csv

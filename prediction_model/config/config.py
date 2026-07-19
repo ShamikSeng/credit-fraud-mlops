@@ -65,10 +65,11 @@ DRIFT_REFERENCE_SAMPLE = int(os.getenv("DRIFT_REFERENCE_SAMPLE", "20000"))
 # serving-side gauge semantics and by observability/alert_rules.yml (keep the two in sync).
 DRIFT_ALERT_SHARE = float(os.getenv("DRIFT_ALERT_SHARE", "0.3"))
 
-# --- Infra (left as-is this phase; DVC/S3 flow de-prioritized, see Decisions Log) ---
-S3_BUCKET = "loanprediction"
-
-FOLDER="datadrift"
+# --- Infra ---
+# Batch-prediction inputs are archived locally (Phase 3c: the original S3 upload pointed at
+# an unreachable bucket owned by the baseline's original author). Git-ignored, created at
+# runtime; layout is BATCH_OUTPUT_DIR/<date>/<filename>_<timestamp>.csv.
+BATCH_OUTPUT_DIR = os.path.join(os.path.dirname(PACKAGE_ROOT), "batch_predictions")
 
 # MLflow tracking. Defaults to a local file store so training/serving work without
 # the (now-unreachable) baseline EC2 server; override with MLFLOW_TRACKING_URI.

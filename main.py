@@ -16,28 +16,28 @@ from prediction_model.monitoring import metrics as drift_metrics  # noqa: F401
 from prediction_model.monitoring import drift
 import mlflow
 import io
-import boto3
+import os
 from datetime import datetime
 from prometheus_fastapi_instrumentator import Instrumentator
 
 
-def upload_to_s3(file_content, filename):
-    s3 = boto3.client('s3')
-
+def save_batch_prediction(file_content, filename):
     current_date = datetime.now().strftime("%Y-%m-%d")
     if filename.endswith('.csv'):
         filename = filename[:-4]
 
-    current_datetime = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    folder_path = f"{config.FOLDER}/{current_date}"
+    # Colons are illegal in Windows filenames, so use %H-%M-%S rather than %H:%M:%S.
+    current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    folder_path = os.path.join(config.BATCH_OUTPUT_DIR, current_date)
+    os.makedirs(folder_path, exist_ok=True)
 
     filename_with_datetime = f"{filename}_{current_datetime}.csv"
+    output_path = os.path.join(folder_path, filename_with_datetime)
 
-    s3_key = f"{folder_path}/{filename_with_datetime}"
+    with open(output_path, "wb") as f:
+        f.write(file_content)
 
-    response = s3.put_object(Bucket=config.S3_BUCKET, Key=s3_key, Body=file_content)
-
-    return s3_key
+    return output_path
 
 mlflow.set_tracking_uri(config.TRACKING_URI)
 
@@ -140,7 +140,7 @@ async def batch_predict(file: UploadFile = File(...)):
     df['Prediction'] = predictions
     result = df.to_csv(index=False)
 
-    s3_key = upload_to_s3(result.encode('utf-8'), file.filename)
+    save_batch_prediction(result.encode('utf-8'), file.filename)
 
     return StreamingResponse(io.BytesIO(result.encode('utf-8')), media_type="text/csv", headers={"Content-Disposition":"attachment; filename=predictions.csv"})
 

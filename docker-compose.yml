@@ -1,0 +1,45 @@
+# Prerequisites (run once on the host before the first `docker compose up`):
+#   1. python -m prediction_model.monitoring.make_reference
+#      Generates prediction_model/monitoring/reference_data.csv (bind-mounted below).
+#      Skipping this makes Docker silently create a directory at that path instead of a file.
+#   2. python -m prediction_model.fix_mlruns_paths
+#      MLflow's local FileStore bakes the host's absolute path into every run's meta.yaml at
+#      training time; this rewrites it to a relative form so the same mlruns/ directory
+#      resolves correctly whether the app runs on the host or in this container. Re-run this
+#      after every new training run (each one bakes a fresh absolute path).
+services:
+  app:
+    build: .
+    image: credit-fraud-mlops:latest
+    ports:
+      - "8005:8005"
+    volumes:
+      - ./mlruns:/app/mlruns
+      - ./prediction_model/monitoring/reference_data.csv:/app/prediction_model/monitoring/reference_data.csv:ro
+      - ./batch_predictions:/app/batch_predictions
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+    depends_on:
+      - app
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    ports:
+      - "3000:3000"
+    volumes:
+      # Each mount target below is a leaf path, never nested inside another mount's target.
+      # An earlier version mounted the whole provisioning/ dir AND a file into a subpath of
+      # that same target; Docker resolved the nested target through the outer bind mount and
+      # silently wrote an empty placeholder file back onto the HOST repo. Keeping every mount
+      # a standalone leaf avoids that trap entirely.
+      - ./observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./observability/grafana/provisioning/dashboards/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./observability/grafana_dashboard.json:/etc/grafana/provisioning/dashboards/files/grafana_dashboard.json:ro
+    depends_on:
+      - prometheus
