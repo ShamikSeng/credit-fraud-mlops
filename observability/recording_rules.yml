@@ -1,0 +1,104 @@
+# Recording rules backing the SLIs in SLO.md.
+#
+# Why record rather than query raw: the burn-rate alerts below compare the SAME ratio over
+# four windows. Recording it once keeps the alert expressions readable and guarantees the
+# short and long windows are computed identically — the usual way multiwindow burn-rate
+# alerting goes wrong is the two windows quietly disagreeing on their filters.
+#
+# THE PROBE EXCLUSION IS LOAD-BEARING. Kubernetes probes hit /healthz and /readyz every 10s
+# and Prometheus scrapes /metrics every 15s. That is ~10 guaranteed-fast, guaranteed-2xx
+# requests per minute. On a demo-volume service they swamp real traffic and pin every SLI
+# at 1.0 — an SLI that cannot go down is decoration. Keep handler!~ on every rule here.
+#
+# Naming follows the Prometheus convention level:metric:operation.
+
+groups:
+  - name: fraud_api_sli
+    interval: 15s
+    rules:
+      # --- Availability -----------------------------------------------------------------
+      # 4xx counts as GOOD. A 422 from the pydantic schema is the service correctly
+      # rejecting a malformed transaction; counting it against availability would mean a
+      # client shipping bad payloads could burn our error budget. Only 5xx is our fault.
+      #
+      # `status` is grouped to "2xx"/"4xx"/"5xx" by prometheus_fastapi_instrumentator
+      # (middleware.py: status = status[0] + "xx"), NOT numeric — so match the literal
+      # "5xx". A numeric regex like status=~"5.." would silently match nothing.
+      - record: job:http_requests:rate5m
+        expr: |
+          sum by (job) (rate(http_requests_total{handler!~"/metrics|/healthz|/readyz"}[5m]))
+      # `or (0 * job:http_requests:rateNN)` is not cosmetic. With zero 5xx the selector
+      # http_requests_total{status="5xx"} matches NO series at all, so the numerator is an
+      # empty vector, the ratio is empty, and the availability panel goes BLANK precisely
+      # when the service is perfectly healthy. Multiplying the denominator by 0 yields a
+      # genuine 0 carrying the same `job` label, so the ratio is well-defined whenever
+      # there is traffic — and still correctly absent when there is none (the documented
+      # zero-traffic case in SLO.md). `vector(0)` would not work here: it is label-less and
+      # would not join with the denominator.
+      - record: job:http_errors:rate5m
+        expr: |
+          sum by (job) (rate(http_requests_total{status="5xx",handler!~"/metrics|/healthz|/readyz"}[5m]))
+          or (0 * job:http_requests:rate5m)
+      - record: job:sli_error_ratio:rate5m
+        expr: job:http_errors:rate5m / job:http_requests:rate5m
+
+      # Long windows record the rate DIRECTLY over that window. Do NOT compute them as
+      # avg_over_time(job:sli_error_ratio:rate5m[1h]) — averaging a ratio of rates weights
+      # every 5m bucket equally regardless of how many requests it saw, so a single quiet
+      # minute with one error can dominate an hour of healthy traffic.
+      - record: job:http_requests:rate30m
+        expr: |
+          sum by (job) (rate(http_requests_total{handler!~"/metrics|/healthz|/readyz"}[30m]))
+      - record: job:http_errors:rate30m
+        expr: |
+          sum by (job) (rate(http_requests_total{status="5xx",handler!~"/metrics|/healthz|/readyz"}[30m]))
+          or (0 * job:http_requests:rate30m)
+      - record: job:sli_error_ratio:rate30m
+        expr: job:http_errors:rate30m / job:http_requests:rate30m
+
+      - record: job:http_requests:rate1h
+        expr: |
+          sum by (job) (rate(http_requests_total{handler!~"/metrics|/healthz|/readyz"}[1h]))
+      - record: job:http_errors:rate1h
+        expr: |
+          sum by (job) (rate(http_requests_total{status="5xx",handler!~"/metrics|/healthz|/readyz"}[1h]))
+          or (0 * job:http_requests:rate1h)
+      - record: job:sli_error_ratio:rate1h
+        expr: job:http_errors:rate1h / job:http_requests:rate1h
+
+      - record: job:http_requests:rate6h
+        expr: |
+          sum by (job) (rate(http_requests_total{handler!~"/metrics|/healthz|/readyz"}[6h]))
+      - record: job:http_errors:rate6h
+        expr: |
+          sum by (job) (rate(http_requests_total{status="5xx",handler!~"/metrics|/healthz|/readyz"}[6h]))
+          or (0 * job:http_requests:rate6h)
+      - record: job:sli_error_ratio:rate6h
+        expr: job:http_errors:rate6h / job:http_requests:rate6h
+
+      # --- Latency ----------------------------------------------------------------------
+      # A THRESHOLD RATIO, not a percentile, and that is a deliberate choice forced by the
+      # instrumentation: http_request_duration_seconds has only le=0.1/0.5/1/+Inf buckets,
+      # so histogram_quantile(0.99, ...) returns +Inf for any p99 above 1s — useless
+      # precisely when you need it. "What fraction of requests beat 500ms" is measurable
+      # here, and is the formulation the SRE Workbook prefers anyway.
+      #
+      # Caveat documented in SLO.md: this histogram carries NO status label, so failed
+      # requests are counted in the denominator alongside successful ones.
+      - record: job:http_requests_fast:rate5m
+        expr: |
+          sum by (job) (rate(http_request_duration_seconds_bucket{le="0.5",handler!~"/metrics|/healthz|/readyz"}[5m]))
+      - record: job:http_requests_latency_total:rate5m
+        expr: |
+          sum by (job) (rate(http_request_duration_seconds_count{handler!~"/metrics|/healthz|/readyz"}[5m]))
+      - record: job:sli_latency_ratio:rate5m
+        expr: job:http_requests_fast:rate5m / job:http_requests_latency_total:rate5m
+
+      - record: job:http_requests_fast:rate1h
+        expr: |
+          sum by (job) (rate(http_request_duration_seconds_bucket{le="0.5",handler!~"/metrics|/healthz|/readyz"}[1h]))
+      - record: job:http_requests_latency_total:rate1h
+        expr: |
+          sum by (job) (rate(http_request_duration_seconds_count{handler!~"/metrics|/healthz|/readyz"}[1h]))
+      - record: job:sli_latency_ratio:rate1h
+        expr: job:http_requests_fast:rate1h / job:http_requests_latency_total:rate1h

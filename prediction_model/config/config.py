@@ -65,6 +65,15 @@ DRIFT_REFERENCE_SAMPLE = int(os.getenv("DRIFT_REFERENCE_SAMPLE", "20000"))
 # serving-side gauge semantics and by observability/alert_rules.yml (keep the two in sync).
 DRIFT_ALERT_SHARE = float(os.getenv("DRIFT_ALERT_SHARE", "0.3"))
 
+# Hard ceiling on the drift worker subprocess (seconds). Previously there was none, so a
+# wedged Evidently run blocked its executor thread forever with no metric, no log line and
+# no recovery short of restarting the pod. See POSTMORTEM-001.
+DRIFT_WORKER_TIMEOUT = float(os.getenv("DRIFT_WORKER_TIMEOUT", "120"))
+
+# The drift reference path is env-overridable so a game day can point it at a bad path and
+# exercise the failure signal end to end (see GAMEDAY.md).
+DRIFT_REFERENCE_FILE = os.getenv("DRIFT_REFERENCE_FILE", DRIFT_REFERENCE_FILE)
+
 # --- Infra ---
 # Batch-prediction inputs are archived locally (Phase 3c: the original S3 upload pointed at
 # an unreachable bucket owned by the baseline's original author). Git-ignored, created at

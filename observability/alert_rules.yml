@@ -1,19 +1,161 @@
-# Prometheus alerting rules for input-drift on the Fraud Detection model (Phase 3b).
+# Prometheus alerting rules for the Fraud Detection service.
 #
-# Scope (per Decisions Log): this is the DECLARATIVE drift->alert path only — the rule that
-# defines "how would we know the input distribution broke?". Wiring these alerts to a paging
-# channel (Alertmanager routing -> email/Slack/PagerDuty) is intentionally out of scope for
-# this session, and drift->retrain is deferred entirely (a retrain loop needs label latency,
-# champion/challenger gating, and rollback — named as future work).
+# Phase 3b shipped the drift rules below but stopped at "the rule exists" - nothing routed
+# anywhere. Phase 4 closes that loop: prometheus.yml now has an `alerting:` block, an
+# Alertmanager runs in the compose stack, and every rule here carries a runbook_url that
+# resolves to a real entry in RUNBOOK.md. An alert a responder cannot act on is a page
+# without a plan.
 #
-# The 0.3 share threshold mirrors config.DRIFT_ALERT_SHARE — keep the two in sync.
+# Severity convention:
+#   critical - user-visible now, or the budget is burning fast enough to matter today
+#   warning  - degraded, or a monitoring blind spot; investigate in hours, not minutes
+#
+# SLO targets (see SLO.md): availability 99.5%, latency 99% of requests under 500ms.
+# Error budgets: 0.005 and 0.01 respectively.
 
 groups:
+  # --- Service availability and latency --------------------------------------------------
+  - name: fraud_api_slo
+    rules:
+      - alert: FraudAPIDown
+        # The genuine "is anyone home" check. It matters more than usual here because the
+        # error-ratio alerts below CANNOT fire when traffic is zero: the ratio is 0/0, the
+        # series is absent, and an absent series never crosses a threshold. Scrape failure
+        # is the only availability signal that survives an idle service.
+        expr: up{job="fraud-detection-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: fraud-detection
+        annotations:
+          summary: "Fraud API target is down"
+          description: >
+            Prometheus cannot scrape {{ $labels.instance }}. The process is gone, wedged,
+            or the port is unreachable.
+          runbook_url: "https://github.com/ShamikSeng/credit-fraud-mlops/blob/main/RUNBOOK.md#fraudapidown"
+
+      - alert: FraudAPIErrorBudgetFastBurn
+        # Multiwindow, multi-burn-rate (Google SRE Workbook ch.5). 14.4x burn exhausts a
+        # 30-day budget in about two days. The short window is ANDed with the long one so
+        # the alert resolves quickly once the burn stops instead of smouldering for a full
+        # hour. That pairing is the entire point of the pattern, not an optimisation.
+        expr: |
+          job:sli_error_ratio:rate1h > (14.4 * 0.005)
+          and
+          job:sli_error_ratio:rate5m > (14.4 * 0.005)
+        for: 2m
+        labels:
+          severity: critical
+          service: fraud-detection
+        annotations:
+          summary: "Fraud API burning error budget 14.4x (fast)"
+          description: >
+            5xx ratio is {{ $value | humanizePercentage }} over 1h and still elevated over
+            the last 5m. At this rate the 30-day availability budget is gone in about two
+            days.
+          runbook_url: "https://github.com/ShamikSeng/credit-fraud-mlops/blob/main/RUNBOOK.md#fraudapierrorbudgetfastburn"
+
+      - alert: FraudAPIErrorBudgetSlowBurn
+        # 6x burn: not an emergency, but it exhausts the month if left alone. Ticket, do
+        # not page.
+        #
+        # HONEST LIMITATION: at demo request volumes a 6h window rarely accumulates enough
+        # traffic for this to fire. It is kept because the pattern is correct, not because
+        # it has been observed firing here. Documented in SLO.md rather than quietly tuned
+        # until it looks impressive.
+        expr: |
+          job:sli_error_ratio:rate6h > (6 * 0.005)
+          and
+          job:sli_error_ratio:rate30m > (6 * 0.005)
+        for: 15m
+        labels:
+          severity: warning
+          service: fraud-detection
+        annotations:
+          summary: "Fraud API burning error budget 6x (slow)"
+          description: >
+            5xx ratio is {{ $value | humanizePercentage }} over 6h. Sustained, this
+            exhausts the 30-day availability budget before the window closes.
+          runbook_url: "https://github.com/ShamikSeng/credit-fraud-mlops/blob/main/RUNBOOK.md#fraudapierrorbudgetslowburn"
+
+      - alert: FraudAPILatencySLOBreach
+        # Threshold ratio, not a percentile: the per-handler histogram has only
+        # le=0.1/0.5/1/+Inf buckets, so a computed p99 is meaningless above 1s.
+        expr: job:sli_latency_ratio:rate1h < 0.99
+        for: 10m
+        labels:
+          severity: warning
+          service: fraud-detection
+        annotations:
+          summary: "Fewer than 99% of requests completing under 500ms"
+          description: >
+            Only {{ $value | humanizePercentage }} of requests finished within 500ms over
+            the last hour (objective: 99%). Prime suspects are model cold start after a
+            restart, or SHAP explanation cost on a run of fraud-flagged transactions.
+          runbook_url: "https://github.com/ShamikSeng/credit-fraud-mlops/blob/main/RUNBOOK.md#fraudapilatencyslobreach"
+
+  # --- Drift pipeline health: monitoring the monitoring ----------------------------------
+  - name: fraud_drift_pipeline
+    rules:
+      - alert: FraudDriftWorkerFailing
+        # THE alert this system was missing, and the reason POSTMORTEM-001 exists.
+        #
+        # Every fraud_input_drift_* gauge reports "state of the last SUCCESSFUL run". When
+        # runs fail, update_from_summary is never reached, the gauges hold their previous
+        # values, and a completely broken drift pipeline renders on the dashboard exactly
+        # like a healthy non-drifting one. This counter is the only signal that separates
+        # those two states, and unlike a staleness heuristic it fires within one evaluation
+        # and distinguishes "never ran" from "running and failing".
+        expr: increase(fraud_drift_runs_total{result="failure"}[15m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+          service: fraud-detection
+        annotations:
+          summary: "Drift checks are failing"
+          description: >
+            {{ $value | printf "%.0f" }} drift run(s) failed in the last 15m. Input-drift monitoring is
+            BLIND while this is firing: the fraud_input_drift_* gauges are stale, not
+            healthy. Usual causes are a missing or unreadable reference_data.csv, or a
+            worker timeout.
+          runbook_url: "https://github.com/ShamikSeng/credit-fraud-mlops/blob/main/RUNBOOK.md#frauddriftworkerfailing"
+
+      - alert: FraudDriftStale
+        # Backstop for failure modes the counter cannot see: drift never being scheduled at
+        # all because traffic stopped, or the executor thread dying.
+        #
+        # The `> 0` guard is essential. The gauge is created at import and reads 0 until
+        # the first successful run, so an unguarded `time() - gauge > 1800` compares
+        # against the epoch and fires on every fresh start, forever. Both sides of the
+        # `and` carry identical label sets, so the vector match succeeds.
+        expr: |
+          (fraud_input_drift_last_run_timestamp_seconds > 0)
+          and
+          (time() - fraud_input_drift_last_run_timestamp_seconds > 1800)
+        for: 5m
+        labels:
+          severity: warning
+          service: fraud-detection
+        annotations:
+          summary: "No successful drift run in over 30 minutes"
+          description: >
+            The last successful drift run is more than 30m old. Either traffic stopped (a
+            window needs DRIFT_WINDOW inputs to trigger) or the drift path is stuck.
+          runbook_url: "https://github.com/ShamikSeng/credit-fraud-mlops/blob/main/RUNBOOK.md#frauddriftstale"
+
+  # --- Input drift (Phase 3b, retained) --------------------------------------------------
+  # Scope note from Phase 3b, now partly resolved: routing to a paging channel WAS out of
+  # scope and is now wired (Alertmanager -> webhook receiver). drift-to-retrain remains
+  # deferred: a retrain loop needs label latency, champion/challenger gating and rollback.
+  #
+  # The 0.3 share threshold mirrors config.DRIFT_ALERT_SHARE - keep the two in sync.
+  # Known sharp edge: DRIFT_ALERT_SHARE is env-overridable but this rule is not, so an env
+  # override silently desyncs FraudInputDriftShareHigh from FraudInputDatasetDrift.
   - name: fraud_input_drift
     rules:
       - alert: FraudInputDatasetDrift
-        # Dataset-level drift the model's own run flagged, held for 10m to avoid flapping on
-        # a single noisy window.
+        # Dataset-level drift the model's own run flagged, held for 10m to avoid flapping
+        # on a single noisy window.
         expr: fraud_input_drift_dataset_detected == 1
         for: 10m
         labels:
@@ -26,11 +168,13 @@ groups:
             (fraud_input_drift_share = {{ $value }}) for 10m. Live transactions no longer
             look like the training distribution the model was fit on. Investigate which
             features drifted (fraud_input_feature_drift_score), and prioritize any that are
-            also high-influence in the SHAP attributions (empirically V14/V10/V4/V12) —
+            also high-influence in the SHAP attributions (empirically V14/V10/V4/V12):
             drift in features the model leans on most is the likeliest to degrade PR-AUC.
+          runbook_url: "https://github.com/ShamikSeng/credit-fraud-mlops/blob/main/RUNBOOK.md#fraudinputdatasetdrift"
 
       - alert: FraudInputDriftShareHigh
-        # Fires on the raw share crossing the threshold even if the dataset flag logic changes.
+        # Fires on the raw share crossing the threshold even if the dataset flag logic
+        # changes.
         expr: fraud_input_drift_share > 0.3
         for: 10m
         labels:
@@ -41,3 +185,4 @@ groups:
           description: >
             fraud_input_drift_share = {{ $value }} (> 0.3) for 10m across the monitored
             V1..V28 + Amount inputs.
+          runbook_url: "https://github.com/ShamikSeng/credit-fraud-mlops/blob/main/RUNBOOK.md#fraudinputdriftsharehigh"

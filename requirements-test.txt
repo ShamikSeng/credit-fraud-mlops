@@ -1,0 +1,4 @@
+# Test-only dependencies. Installed in the Dockerfile's `test` stage and in CI, never in
+# the runtime image. Kept separate from requirements-dev.txt on purpose: that file carries
+# dvc + the pathspec<0.12 conflict pin, which has no business in a test stage.
+pytest==7.4.2

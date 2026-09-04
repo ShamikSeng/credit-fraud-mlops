@@ -1,3 +1,7 @@
+# Deployment for the fraud-detection API.
+#
+# LOCAL-CLUSTER MANIFEST. `imagePullPolicy: Never` and the hostPath volume below bind this
+# to Docker Desktop's Kubernetes on one machine. The production shape is called out inline.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,7 +9,34 @@ metadata:
   labels:
     app: mlops
 spec:
+  # replicas: 1 is a CONSTRAINT, not a default we never revisited.
+  #
+  # prediction_model/monitoring/drift.py keeps _BUFFER (a 500-slot deque) and _COUNT as
+  # per-process globals. Two replicas means two independent half-rate drift windows, each
+  # computing the statistic over a biased half-sample — the drift number itself becomes
+  # wrong, not just duplicated. And observability/prometheus.yml scrapes a single static
+  # target ("app:8005"), so two pods behind one Service produce ONE series that alternates
+  # between two unrelated pods' drift states rather than two aggregatable ones.
+  #
+  # Scaling this safely needs: the buffer externalised (Redis LPUSH/LTRIM + a lock for
+  # runner election) or drift split into a singleton Deployment, and Prometheus moved to
+  # kubernetes_sd_configs role:pod. Tracked as a Known Gap in SLO.md.
+  #
+  # predict._CACHE also duplicates per replica, but that is merely wasteful (2x memory,
+  # 2 cold starts) rather than incorrect — worth distinguishing.
   replicas: 1
+  revisionHistoryLimit: 3
+  # progressDeadlineSeconds must exceed startupProbe's worst case, or a slow-but-healthy
+  # rollout is marked failed while it is still legitimately starting.
+  progressDeadlineSeconds: 300
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # maxUnavailable: 0 keeps capacity during a rollout: the new pod must pass its
+      # readinessProbe before the old one is torn down. With replicas:1 the default 25%
+      # rounds down to 0 anyway, but stating it makes the intent survive a replica bump.
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app: mlops
@@ -14,17 +45,89 @@ spec:
       labels:
         app: mlops
     spec:
+      # Default is 30s. The preStop sleep below consumes 5s of this budget, leaving
+      # ample time for in-flight predictions (p99 is well under a second) to drain.
+      terminationGracePeriodSeconds: 45
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: mlops
           image: credit-fraud-mlops:latest
           imagePullPolicy: Never
           ports:
-            - containerPort: 8005
+            - name: http
+              containerPort: 8005
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            # readOnlyRootFilesystem is deliberately NOT set. drift.compute_drift() writes
+            # into tempfile.TemporaryDirectory() and MLflow writes under $HOME/.cache;
+            # enabling it without also mounting emptyDir at /tmp and a writable HOME would
+            # CrashLoop the pod. Listed as follow-up work rather than shipped broken.
+          resources:
+            # requests are what the scheduler reserves; without them the pod is BestEffort
+            # QoS and is the first thing evicted under node pressure. They are also the
+            # denominator an HPA would need, so their absence silently breaks autoscaling.
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              # Headroom for the drift worker: compute_drift() forks a second interpreter
+              # that imports Evidently, and that child's RSS counts against this cgroup.
+              cpu: "1"
+              memory: 2Gi
+          # Three probes, three distinct questions. Getting these confused is the classic
+          # way to turn a dependency outage into a self-inflicted restart storm.
+          startupProbe:
+            # "Has the process finished booting?" Importing mlflow + xgboost + shap takes
+            # several seconds during which nothing is listening. This gives it up to 60s
+            # (12 x 5s) while holding the liveness probe off, so slow boots are not kills.
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            # "Is this process wedged?" -> restart. Points at /healthz, which never checks
+            # the model: restarting cannot conjure an absent artifact, so making liveness
+            # model-dependent would crash-loop a pod whose only problem is a missing mount.
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            # "Should this pod get traffic?" -> /readyz, which is 503 until the model is
+            # resident. This is what makes maxUnavailable:0 meaningful during a rollout,
+            # and what keeps a model-less pod up and diagnosable instead of serving 500s.
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              # Endpoint removal and SIGTERM race: kube-proxy/LB rules are updated
+              # asynchronously, so a pod can receive connections briefly after it starts
+              # shutting down. Sleeping before SIGTERM lets deregistration land first.
+              exec:
+                command: ["sleep", "5"]
           volumeMounts:
             - name: mlruns
               mountPath: /app/mlruns
+              readOnly: true
       volumes:
         - name: mlruns
+          # LOCAL ONLY. hostPath pins this pod to one node's filesystem — on a real
+          # cluster it fails to schedule anywhere else. Production: bake the model into
+          # the image (it is ~0.5 MB) or pull from S3/a PVC at startup.
           hostPath:
             path: /run/desktop/mnt/host/c/Users/a_sen/Downloads/MLOps_Project/mlruns
             type: Directory

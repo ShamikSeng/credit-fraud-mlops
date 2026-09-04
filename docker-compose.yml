@@ -13,6 +13,19 @@ services:
     image: credit-fraud-mlops:latest
     ports:
       - "8005:8005"
+    environment:
+      # All defaulted, all overridable from a .env file or the shell. GAMEDAY.md drives the
+      # injected fault entirely through DRIFT_REFERENCE_FILE, and the k6 profile below sets
+      # DRIFT_ENABLED=false so a load run measures serving latency in isolation.
+      DRIFT_ENABLED: "${DRIFT_ENABLED:-true}"
+      DRIFT_WINDOW: "${DRIFT_WINDOW:-500}"
+      DRIFT_REFERENCE_FILE: "${DRIFT_REFERENCE_FILE:-/app/prediction_model/monitoring/reference_data.csv}"
+      DRIFT_WORKER_TIMEOUT: "${DRIFT_WORKER_TIMEOUT:-120}"
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+    # restart policy, not `always`: `unless-stopped` respects a deliberate `docker compose
+    # stop` instead of fighting the operator, while still recovering from a crash or a
+    # daemon restart. The container also inherits the Dockerfile's HEALTHCHECK (/healthz).
+    restart: unless-stopped
     volumes:
       - ./mlruns:/app/mlruns
       - ./prediction_model/monitoring/reference_data.csv:/app/prediction_model/monitoring/reference_data.csv:ro
@@ -22,16 +35,81 @@ services:
     image: prom/prometheus:v2.53.0
     ports:
       - "9090:9090"
+    restart: unless-stopped
+    # WARNING: supplying `command:` REPLACES the image's default arguments entirely. Every
+    # line below except the retention flag is a default being re-stated because we added
+    # one flag. Dropping --config.file is the single most common way to break this stack,
+    # and it presents confusingly as "my app target disappeared" rather than as a config
+    # error.
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      # Retention matters for the SLO work: the burn-rate alerts read a 6h window, so a
+      # TSDB that resets on every `docker compose down` makes the slow-burn rule
+      # permanently unfirable. See the named volume below.
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      # Allows `curl -X POST localhost:9090/-/reload` to pick up rule changes without
+      # restarting the container and losing the scrape continuity mid-game-day.
+      - "--web.enable-lifecycle"
     volumes:
       - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./observability/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - ./observability/recording_rules.yml:/etc/prometheus/recording_rules.yml:ro
+      # NAMED volume, not a bind. Prometheus runs as nobody (uid 65534); Docker chowns a
+      # named volume on creation but leaves a host bind's ownership alone, so a bind here
+      # fails with "permission denied" on the very first write.
+      - prometheus_data:/prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    # Plain depends_on (start order only), deliberately NOT condition: service_healthy.
+    # Prometheus scraping a target that is not up yet is normal and self-correcting; making
+    # the monitoring stack refuse to start because the monitored service is unhealthy would
+    # blind us during exactly the failure we want to watch.
     depends_on:
       - app
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    ports:
+      - "9093:9093"
+    restart: unless-stopped
+    volumes:
+      # Standalone leaf target, per the Grafana note below. The host file is committed, so
+      # it always exists before first `up` and Docker cannot invent a directory in its place.
+      - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    depends_on:
+      - webhook-logger
+
+  webhook-logger:
+    # Alertmanager's default receiver target. Echoes the full POST body to stdout, so the
+    # end of the alert path is observable with `docker compose logs -f webhook-logger` and
+    # no Slack workspace, no committed secret, and no internet access are required.
+    image: mendhak/http-https-echo:31
+    environment:
+      HTTP_PORT: "8080"
+    restart: unless-stopped
 
   grafana:
     image: grafana/grafana:11.1.0
     ports:
       - "3000:3000"
+    restart: unless-stopped
+    environment:
+      # Still a demo credential, but no longer the literal default: admin/admin means an
+      # unauthenticated-in-practice dashboard, which is the sort of thing a reviewer notices.
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_USER:-admin}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_PASSWORD:-fraud-demo-not-a-secret}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       # Each mount target below is a leaf path, never nested inside another mount's target.
       # An earlier version mounted the whole provisioning/ dir AND a file into a subpath of
@@ -41,5 +119,29 @@ services:
       - ./observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ./observability/grafana/provisioning/dashboards/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
       - ./observability/grafana_dashboard.json:/etc/grafana/provisioning/dashboards/files/grafana_dashboard.json:ro
+      - ./observability/slo_dashboard.json:/etc/grafana/provisioning/dashboards/files/slo_dashboard.json:ro
+      # Named volume so dashboard tweaks, annotations and the Grafana DB survive a
+      # `docker compose down`.
+      - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
+
+  k6:
+    # Load generator. Not part of the default stack - start it explicitly:
+    #   docker compose --profile loadtest run --rm k6
+    # It joins the compose network, so it reaches the API as app:8005 rather than needing
+    # host.docker.internal.
+    profiles: ["loadtest"]
+    image: grafana/k6:0.52.0
+    volumes:
+      - ./loadtest/k6_prediction.js:/scripts/k6_prediction.js:ro
+    environment:
+      BASE_URL: "http://app:8005"
+    command: ["run", "/scripts/k6_prediction.js"]
+    depends_on:
+      - app
+
+volumes:
+  prometheus_data:
+  alertmanager_data:
+  grafana_data:

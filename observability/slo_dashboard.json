@@ -1,0 +1,269 @@
+{
+  "uid": "fraud-slo",
+  "title": "Fraud API — SLOs & Pipeline Health (Phase 4)",
+  "tags": ["fraud", "slo", "sre", "phase-4"],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "time": { "from": "now-6h", "to": "now" },
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Availability SLI (1h)",
+      "description": "Share of non-5xx requests over the last hour. Objective: 99.5%. 4xx counts as good — a 422 from the schema is the service correctly rejecting a malformed transaction. Probe and scrape traffic is excluded, or the SLI would be pinned at 1.0 by ~10 guaranteed-fast requests per minute.",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0.95,
+          "max": 1,
+          "decimals": 4,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 0.995 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "1 - job:sli_error_ratio:rate1h",
+          "legendFormat": "availability"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Latency SLI (1h)",
+      "description": "Share of requests completing under 500ms. Objective: 99%. This is a threshold ratio rather than a percentile because the per-handler histogram carries only le=0.1/0.5/1/+Inf buckets — histogram_quantile would return +Inf for any p99 above 1s.",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0.9,
+          "max": 1,
+          "decimals": 4,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 0.99 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "job:sli_latency_ratio:rate1h",
+          "legendFormat": "under 500ms"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Drift pipeline",
+      "description": "Failed drift runs in the last 15m. This is the signal the fraud_input_drift_* gauges cannot give you: they only ever show the last SUCCESSFUL run, so while runs are failing they read as healthy. Anything above 0 here means drift monitoring is blind.",
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "increase(fraud_drift_runs_total{result=\"failure\"}[15m])",
+          "legendFormat": "failed runs (15m)"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Drift freshness",
+      "description": "Seconds since the last successful drift run. Reads as a very large number until the first run completes, because the underlying gauge starts at 0 (the epoch) — the same reason the FraudDriftStale alert needs a `> 0` guard.",
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1800 },
+              { "color": "red", "value": 3600 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "time() - fraud_input_drift_last_run_timestamp_seconds",
+          "legendFormat": "age of last successful run"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Error budget burn rate (multiwindow)",
+      "description": "Burn rate = observed 5xx ratio divided by the 0.005 budget. 1x consumes the 30-day budget exactly on schedule. The 14.4x line is the fast-burn page threshold (budget gone in ~2 days); 6x is the slow-burn ticket threshold. The fast alert fires only when the 1h AND 5m windows both exceed the line, so it clears promptly once the burn stops.",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 5 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 6 },
+              { "color": "red", "value": 14.4 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "job:sli_error_ratio:rate5m / 0.005",
+          "legendFormat": "5m burn"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "job:sli_error_ratio:rate1h / 0.005",
+          "legendFormat": "1h burn"
+        },
+        {
+          "refId": "C",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "job:sli_error_ratio:rate6h / 0.005",
+          "legendFormat": "6h burn"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Request rate by status class",
+      "description": "Status is grouped to 2xx/4xx/5xx by prometheus_fastapi_instrumentator, not reported numerically. Probe and scrape handlers are excluded to match the SLI.",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10, "stacking": { "mode": "normal" } }
+        },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (status) (rate(http_requests_total{handler!~\"/metrics|/healthz|/readyz\"}[5m]))",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Drift run outcomes",
+      "description": "Success, failure and skip rates for the drift pipeline. `already_running` skips mean runs are overlapping — the single-slot executor is dropping them deliberately rather than letting slow runs pile up past their own window.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 5 }
+        },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "increase(fraud_drift_runs_total[15m])",
+          "legendFormat": "runs: {{result}}"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "increase(fraud_drift_runs_skipped_total[15m])",
+          "legendFormat": "skipped: {{reason}}"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Request latency distribution (all traffic)",
+      "description": "From http_request_duration_highr_seconds, which has fine buckets but NO labels at all — so this includes probe and scrape traffic and cannot be filtered. It is an overview, not the SLI. The SLI panel above is the number that counts.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 0 }
+        },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_request_duration_highr_seconds_bucket[5m])))",
+          "legendFormat": "p50"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_highr_seconds_bucket[5m])))",
+          "legendFormat": "p95"
+        },
+        {
+          "refId": "C",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_highr_seconds_bucket[5m])))",
+          "legendFormat": "p99"
+        }
+      ]
+    }
+  ]
+}

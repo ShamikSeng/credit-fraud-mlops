@@ -9,7 +9,7 @@ Deliberately imports ONLY prometheus_client — no Evidently, no pandas-heavy wo
 The gauges land on prometheus_client's default REGISTRY, which is exactly what
 `prometheus_fastapi_instrumentator`'s `.expose(app)` serves — so no new endpoint is needed.
 """
-from prometheus_client import Gauge
+from prometheus_client import Counter, Gauge
 
 # --- Dataset-level gauges ---------------------------------------------------------------
 DRIFT_DATASET_DETECTED = Gauge(
@@ -42,6 +42,37 @@ FEATURE_DRIFT_SCORE = Gauge(
     "Per-feature drift score from the last run (statistic/distance; higher = more drift).",
     ["feature"],
 )
+
+
+# --- Run-outcome counters (Phase 4 SRE) -------------------------------------------------
+# The gauges above are all "state of the last SUCCESSFUL run". That leaves a blind spot
+# they cannot express: when a run FAILS, update_from_summary is never reached, so every
+# gauge keeps its previous value and a permanently broken drift pipeline is
+# indistinguishable on a dashboard from a healthy, non-drifting one. These counters are
+# the signal for "is the monitoring itself working?" — monitoring the monitoring.
+#
+# Registered at module import (never inside a function) so a re-import cannot raise
+# Duplicated timeseries against the global REGISTRY that tests assert on.
+DRIFT_RUNS = Counter(
+    "fraud_drift_runs_total",
+    "Drift-check runs by outcome. `failure` includes worker crashes, a missing reference "
+    "file, and worker timeouts.",
+    ["result"],
+)
+DRIFT_RUNS_SKIPPED = Counter(
+    "fraud_drift_runs_skipped_total",
+    "Drift checks that were requested but not executed, by reason.",
+    ["reason"],
+)
+
+# Pre-initialise every label value so the series exist at 0 from the first scrape. Without
+# this, `increase(fraud_drift_runs_total{result="failure"}[15m]) > 0` cannot fire on the
+# very first failure: the series would not exist yet, and there is nothing to increase
+# from. Same reasoning as the module docstring's note about the gauges appearing at 0.
+for _result in ("success", "failure"):
+    DRIFT_RUNS.labels(result=_result)
+for _reason in ("already_running", "no_data"):
+    DRIFT_RUNS_SKIPPED.labels(reason=_reason)
 
 
 def update_from_summary(summary):

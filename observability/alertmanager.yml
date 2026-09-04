@@ -1,0 +1,94 @@
+# Alertmanager configuration (Phase 4).
+#
+# Phase 3b's alert_rules.yml carried an explicit note that routing alerts anywhere was out
+# of scope. This file closes that gap: rules now reach a receiver, and the difference
+# between "a rule exists" and "someone finds out" is exactly this file.
+#
+# NO SECRET IS COMMITTED HERE. The default receiver posts to a local webhook-logger
+# container so the whole path is demonstrable offline. The Slack receiver below is real but
+# reads its URL from an environment variable, which is absent by default.
+
+global:
+  # How long to wait for a resolved notification before declaring an alert resolved on its
+  # own. Must exceed the evaluation interval by a comfortable margin, or a slow scrape
+  # cycle marks a still-firing alert resolved and then re-fires it: flapping notifications
+  # caused by config, not by the service.
+  resolve_timeout: 5m
+
+route:
+  # Group by alertname and service so one incident produces one notification rather than
+  # one per series. `instance` is deliberately NOT in the grouping key: adding it would
+  # split a single service-wide problem into a notification per pod.
+  group_by: ["alertname", "service"]
+
+  # DEMO VALUES. Production would be roughly group_wait: 30s, group_interval: 5m,
+  # repeat_interval: 4h. They are shortened here so a game day shows the notification
+  # within the exercise rather than half an hour later.
+  #
+  # What each one actually does, since they are easy to confuse:
+  #   group_wait      - hold the FIRST notification for a new group, so alerts that fire
+  #                     together arrive as one message instead of a burst
+  #   group_interval  - minimum gap before sending an UPDATE about a group that has already
+  #                     notified (e.g. a second alert joined the group)
+  #   repeat_interval - how long before re-notifying about an alert that is STILL firing.
+  #                     Too short and it becomes noise people learn to ignore, which is how
+  #                     alert fatigue starts.
+  group_wait: 10s
+  group_interval: 1m
+  repeat_interval: 1h
+
+  receiver: webhook-logger
+
+  routes:
+    # Critical alerts break out of the default grouping cadence: notify almost immediately
+    # and repeat more often. In a real setup this route would target PagerDuty while
+    # warnings went to a Slack channel or a ticket queue.
+    - matchers:
+        - severity = "critical"
+      receiver: webhook-logger
+      group_wait: 5s
+      repeat_interval: 30m
+
+inhibit_rules:
+  # If the service is down entirely, do not also page about error budget burn and latency
+  # for the same service. They are consequences of the same event, and a responder woken
+  # by three notifications for one outage learns to silence all three.
+  - source_matchers:
+      - alertname = "FraudAPIDown"
+    target_matchers:
+      - severity =~ "warning|critical"
+    equal: ["service"]
+
+  # A failing drift worker makes the drift gauges stale by definition, so the staleness
+  # backstop would fire alongside it and describe the same fault twice.
+  - source_matchers:
+      - alertname = "FraudDriftWorkerFailing"
+    target_matchers:
+      - alertname = "FraudDriftStale"
+    equal: ["service"]
+
+receivers:
+  - name: webhook-logger
+    webhook_configs:
+      # Points at the webhook-logger service in docker-compose.yml, which echoes the full
+      # alert payload to its container logs:
+      #   docker compose logs -f webhook-logger
+      - url: "http://webhook-logger:8080/alert"
+        send_resolved: true
+
+  # Unused unless routed to. Kept as documentation of the real shape: the URL comes from
+  # the environment, never from this file, so the config is safe to commit and to publish.
+  # Enable by setting SLACK_WEBHOOK_URL on the alertmanager service and pointing a route
+  # at this receiver.
+  - name: slack
+    slack_configs:
+      - api_url_file: /etc/alertmanager/slack_url
+        channel: "#fraud-detection-alerts"
+        send_resolved: true
+        title: "{{ .CommonLabels.alertname }} ({{ .CommonLabels.severity }})"
+        # Link every notification straight to the runbook entry. A notification without an
+        # action is just anxiety.
+        text: >-
+          {{ range .Alerts }}{{ .Annotations.description }}
+          Runbook: {{ .Annotations.runbook_url }}
+          {{ end }}

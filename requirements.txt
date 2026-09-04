@@ -4,17 +4,28 @@ pandas==1.5.3
 joblib==1.2.0
 scikit-learn==1.2.2
 scipy==1.10.1
-pytest==7.4.2
+# anyio is a TRANSITIVE dependency (fastapi -> starlette -> anyio) and was unpinned.
+# anyio 4.15.0 removed the lazy `anyio.to_thread` attribute that starlette 0.27.0 accesses
+# in concurrency.py, so run_in_threadpool raises AttributeError and EVERY sync `def`
+# endpoint returns 500 - while the async probes keep returning 200, so the container still
+# reports healthy. Caught by rebuilding the image; the previously-built image had an older
+# anyio baked in and hid it. Pinned to the last version verified working here.
+anyio==4.14.1
 fastapi==0.103.0
 pydantic==2.4.2
+# Single uvicorn process, no gunicorn. Multi-worker is wrong for this service: predict._CACHE
+# and drift._BUFFER/_COUNT are per-process globals, so N workers means N independent drift
+# windows and a /metrics scrape that returns whichever worker it happened to land on.
 uvicorn==0.23.2
-gunicorn==21.2.0
 hyperopt==0.2.7
 mlflow==2.13.2
 xgboost==2.0.3
 shap==0.44.1
 python-multipart==0.0.9
-prometheus_fastapi_instrumentator
+# Pinned deliberately: the SLO queries in SLO.md depend on 6.1.0's exact default metric
+# names and label sets (status grouped to "2xx"/"5xx"; no status label on the duration
+# histogram). An unpinned upgrade would silently change those and empty every SLI panel.
+prometheus_fastapi_instrumentator==6.1.0
 # Drift monitoring (Phase 3b). Evidently 0.7.x is used ONLY by the isolated drift worker
 # process (prediction_model/monitoring/drift_worker.py), never imported by the FastAPI serving
 # process — its litestar/multipart dependency conflicts with the pinned python-multipart.

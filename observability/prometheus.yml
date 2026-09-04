@@ -14,8 +14,22 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
-# Drift alert rules live in a separate file so they can be reviewed on their own.
+# Alertmanager routing (Phase 4). Phase 3b defined alert rules but had no `alerting:`
+# block, so every rule evaluated correctly and then fired into nothing. This is the line
+# that turns a dashboard into a notification.
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+# Rules split by purpose so each file can be reviewed on its own:
+#   recording_rules.yml - SLI numerators/denominators backing the burn-rate alerts
+#   alert_rules.yml     - the alerts themselves
+# Order matters at evaluation time only in the sense that recording rules must exist before
+# alerts referencing them produce data; Prometheus evaluates groups independently, so the
+# first evaluation cycle after a reload may briefly have no recorded series.
 rule_files:
+  - "recording_rules.yml"
   - "alert_rules.yml"
 
 scrape_configs:

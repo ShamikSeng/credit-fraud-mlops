@@ -12,7 +12,9 @@ Layered so the fast, deterministic parts run everywhere with no Evidently and no
 The parser fixtures mirror the real evidently==0.7.21 `.dict()` shape, confirmed by probing the
 installed stack (DriftedColumnsCount.value = {count, share}; ValueDrift.value = float score).
 """
+import inspect
 import os
+import subprocess
 import tempfile
 
 import numpy as np
@@ -164,3 +166,83 @@ def test_worker_end_to_end_detects_broad_shift(monkeypatch):
         assert summary["dataset_drift_detected"] is True
         assert summary["drift_share"] >= 0.3
         assert summary["drifted_columns_count"] >= 10
+
+
+# --- Phase 4 SRE: run-outcome observability -------------------------------------------
+# These cover the blind spot POSTMORTEM-001 was written about: before them, a drift
+# pipeline that failed every single run looked identical on the dashboard to a healthy one.
+
+def _counter(name, **labels):
+    return REGISTRY.get_sample_value(name, labels) or 0.0
+
+
+def test_worker_timeout_is_bounded_and_counted(monkeypatch, tmp_path):
+    """A wedged worker must be killed and reported, not block its thread forever."""
+    ref = tmp_path / "reference.csv"
+    pd.DataFrame({c: [0.0, 1.0] for c in config.DRIFT_FEATURES}).to_csv(ref, index=False)
+    monkeypatch.setattr(config, "DRIFT_REFERENCE_FILE", str(ref))
+
+    def _hang(*args, **kwargs):
+        # subprocess.run kills the child before raising this; assert we pass a timeout at all.
+        assert kwargs.get("timeout") == config.DRIFT_WORKER_TIMEOUT, \
+            "compute_drift must pass timeout= or a hung worker blocks forever"
+        raise subprocess.TimeoutExpired(cmd="drift_worker", timeout=kwargs["timeout"])
+
+    monkeypatch.setattr(drift.subprocess, "run", _hang)
+
+    _reset_buffer()
+    for _ in range(3):
+        drift.record_inference({c: 0.5 for c in config.DRIFT_FEATURES})
+
+    before = _counter("fraud_drift_runs_total", result="failure")
+    assert drift.safe_run_drift_check() is None          # swallowed, never raised
+    after = _counter("fraud_drift_runs_total", result="failure")
+    assert after == before + 1, "a timed-out drift run must increment the failure counter"
+
+
+def test_missing_reference_increments_failure_counter(monkeypatch):
+    """The game-day injection path: a bad DRIFT_REFERENCE_FILE must be visible in metrics."""
+    monkeypatch.setattr(config, "DRIFT_REFERENCE_FILE", "/nonexistent/reference.csv")
+    _reset_buffer()
+    for _ in range(3):
+        drift.record_inference({c: 0.5 for c in config.DRIFT_FEATURES})
+
+    before = _counter("fraud_drift_runs_total", result="failure")
+    assert drift.safe_run_drift_check() is None
+    assert _counter("fraud_drift_runs_total", result="failure") == before + 1
+
+
+def test_empty_buffer_counts_as_skipped_not_failure():
+    """No data is not an error; conflating the two would make the failure alert flap."""
+    _reset_buffer()
+    fail_before = _counter("fraud_drift_runs_total", result="failure")
+    skip_before = _counter("fraud_drift_runs_skipped_total", reason="no_data")
+
+    assert drift.safe_run_drift_check() is None
+    assert _counter("fraud_drift_runs_total", result="failure") == fail_before
+    assert _counter("fraud_drift_runs_skipped_total", reason="no_data") == skip_before + 1
+
+
+def test_overlapping_runs_are_dropped_not_queued(monkeypatch):
+    """Piling slow runs up behind each other would let them outlive their own window."""
+    drift._RUNNING.set()
+    try:
+        before = _counter("fraud_drift_runs_skipped_total", reason="already_running")
+        assert drift.schedule_drift_check() is False
+        assert _counter("fraud_drift_runs_skipped_total",
+                        reason="already_running") == before + 1
+    finally:
+        drift._RUNNING.clear()
+
+
+def test_drift_does_not_run_as_a_starlette_background_task():
+    """Regression guard for the latency-accounting bug in POSTMORTEM-001.
+
+    Starlette awaits BackgroundTask inside the response, which is inside the Prometheus
+    middleware's timing block — so a drift run scheduled that way is billed to the
+    request's measured latency even though the client never waited for it.
+    """
+    import main
+    src = inspect.getsource(main._record_and_maybe_check)
+    assert "add_task" not in src, "drift must not be scheduled as a BackgroundTask"
+    assert "schedule_drift_check" in src
