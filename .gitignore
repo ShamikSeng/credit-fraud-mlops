@@ -21,3 +21,6 @@ prediction_model/monitoring/reference_data.csv
 !GAMEDAY.md
 !POSTMORTEM-001-drift-blindspot.md
 !POSTMORTEM-002-anyio-supply-chain.md
+
+# Word lock/temp files
+~$*
