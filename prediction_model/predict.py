@@ -1,3 +1,5 @@
+import threading
+import time
 import pandas as pd
 import numpy as np
 from prediction_model.config import config
@@ -12,17 +14,53 @@ import mlflow
 # NOTE (Phase 3a): this is deliberately the same "cache-until-run_id-changes" pattern
 # that should eventually replace the per-request MLflow *model reload* P0 itself
 # (see PROJECT_LOG Decisions Log). The explainer just forced us to build the mechanism
-# first. The lightweight run resolution below still runs per request — pinning a
-# registry stage to drop that too remains the deferred next step.
+# first. The run resolution below is now TTL-cached rather than per request — pinning a
+# registry stage to drop it entirely remains the deferred next step.
 _CACHE = {"run_id": None, "model": None, "explainer": None}
 
+# The run resolution itself is cached (config.RUN_ID_CACHE_SECONDS): search_runs reads
+# every run's meta.yaml, which made each request take seconds on the Docker bind mount.
+# Once the TTL expires, requests keep getting the cached run_id while ONE background thread
+# re-queries (stale-while-revalidate), so no request after the first ever pays that cost.
+_RUN_ID_CACHE = {"run_id": None, "resolved_at": 0.0, "refresh": None}
+_RUN_ID_LOCK = threading.Lock()
 
-def _resolve_best_run_id():
+
+def _query_best_run_id():
     """Resolve the current 'best' run by PR-AUC (the right criterion for this imbalance)."""
     experiment = mlflow.get_experiment_by_name(config.EXPERIMENT_NAME)
     runs_df = mlflow.search_runs(experiment_ids=experiment.experiment_id,
                                  order_by=['metrics.pr_auc DESC'])
     return runs_df.iloc[0]['run_id']
+
+
+def _refresh_run_id():
+    try:
+        run_id = _query_best_run_id()
+        with _RUN_ID_LOCK:
+            _RUN_ID_CACHE.update(run_id=run_id, resolved_at=time.monotonic())
+    except Exception:  # noqa: BLE001 - keep serving the cached run; retry after the next TTL
+        with _RUN_ID_LOCK:
+            _RUN_ID_CACHE["resolved_at"] = time.monotonic()
+    finally:
+        with _RUN_ID_LOCK:
+            _RUN_ID_CACHE["refresh"] = None
+
+
+def _resolve_best_run_id():
+    """Best run_id. Only the very first call queries MLflow inline; after that, an expired
+    entry is served as-is while a background thread re-queries."""
+    if _RUN_ID_CACHE["run_id"] is None:
+        run_id = _query_best_run_id()
+        with _RUN_ID_LOCK:
+            _RUN_ID_CACHE.update(run_id=run_id, resolved_at=time.monotonic())
+        return run_id
+    with _RUN_ID_LOCK:
+        expired = time.monotonic() - _RUN_ID_CACHE["resolved_at"] >= config.RUN_ID_CACHE_SECONDS
+        if expired and _RUN_ID_CACHE["refresh"] is None:
+            _RUN_ID_CACHE["refresh"] = threading.Thread(target=_refresh_run_id, daemon=True)
+            _RUN_ID_CACHE["refresh"].start()
+        return _RUN_ID_CACHE["run_id"]
 
 
 def _get_model_and_explainer():

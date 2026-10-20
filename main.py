@@ -1,5 +1,6 @@
 from fastapi import FastAPI , File, UploadFile, BackgroundTasks
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse, RedirectResponse
+from fastapi import HTTPException
 import uvicorn
 import numpy as np
 import pandas as pd
@@ -78,6 +79,31 @@ def _record_and_maybe_check(data, background_tasks):
 @app.get("/")
 def index():
     return {"message":"Welcome to the MLOps Credit Card Fraud Detection app" }
+
+
+# Demo frontend: a single static page that calls the endpoints below from the same origin.
+# `/` stays JSON (health check); the UI lives at /ui.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_INDEX = os.path.join(BASE_DIR, "frontend", "index.html")
+# 200 held-out test rows (185 legit + 15 fraud, with Class) so batch scoring can be checked.
+SAMPLE_BATCH = os.path.join(BASE_DIR, "frontend", "sample_batch.csv")
+
+
+@app.get("/ui", include_in_schema=False)
+def ui():
+    return FileResponse(FRONTEND_INDEX)
+
+
+@app.get("/ui/", include_in_schema=False)
+def ui_slash():
+    return RedirectResponse("/ui")
+
+
+@app.get("/ui/sample_batch.csv", include_in_schema=False)
+def ui_sample_batch():
+    if not os.path.exists(SAMPLE_BATCH):
+        raise HTTPException(status_code=404, detail="frontend/sample_batch.csv not found")
+    return FileResponse(SAMPLE_BATCH, media_type="text/csv")
 
 @app.post("/prediction_api", response_model=PredictionResponse)
 def predict(transaction: TransactionFeatures, background_tasks: BackgroundTasks):

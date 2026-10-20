@@ -122,3 +122,28 @@ def test_explain_row_respects_top_n(fitted_fraud_pipeline, imbalanced_df):
     row = imbalanced_df[config.FEATURES].iloc[[1]]
 
     assert len(explain_row(model, explainer, row, top_n=3)['top_features']) == 3
+
+
+def test_best_run_id_is_cached_and_refreshed_in_background(monkeypatch):
+    # Serving must not re-query MLflow inline on requests (seconds each on a bind mount):
+    # only the first call queries; an expired entry is served while a background refresh runs.
+    from prediction_model import predict
+    calls = []
+    monkeypatch.setattr(predict, "_query_best_run_id", lambda: calls.append(1) or f"run{len(calls)}")
+    monkeypatch.setattr(predict, "_RUN_ID_CACHE", {"run_id": None, "resolved_at": 0.0, "refresh": None})
+    clock = [1000.0]
+    monkeypatch.setattr(predict.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(config, "RUN_ID_CACHE_SECONDS", 60)
+
+    assert predict._resolve_best_run_id() == "run1"
+    clock[0] += 59
+    assert predict._resolve_best_run_id() == "run1"   # within TTL: no re-query
+    assert len(calls) == 1
+
+    clock[0] += 1
+    assert predict._resolve_best_run_id() == "run1"   # expired: stale value served immediately
+    refresh = predict._RUN_ID_CACHE["refresh"]
+    if refresh is not None:
+        refresh.join(timeout=5)
+    assert len(calls) == 2
+    assert predict._resolve_best_run_id() == "run2"   # background refresh landed

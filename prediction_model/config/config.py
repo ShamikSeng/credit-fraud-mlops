@@ -80,4 +80,9 @@ TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "file:./mlruns")
 
 EXPERIMENT_NAME="fraud_detection_model"
 
+# How long (seconds) serving reuses the resolved best run_id before re-querying MLflow.
+# search_runs scans every run's meta.yaml; on a bind-mounted file store that costs seconds
+# per request. A newly trained best model is picked up within this window. 0 = every request.
+RUN_ID_CACHE_SECONDS = float(os.getenv("RUN_ID_CACHE_SECONDS", "60"))
+
 MODEL_NAME="/fraud-detection-model"

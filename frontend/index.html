@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fraud Detection Console</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --surface-2: #f3f2ee;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --accent: #2a78d6;
+    --accent-ink: #ffffff;
+    --risk-up: #e34948;       /* SHAP > 0: pushes toward fraud */
+    --risk-down: #2a78d6;     /* SHAP < 0: pushes toward legit */
+    --good: #0ca30c;
+    --good-ink: #006300;
+    --critical: #d03b3b;
+    --warning: #fab219;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --surface-2: #232321;
+      --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --accent: #3987e5; --risk-up: #e66767; --risk-down: #3987e5;
+      --good-ink: #0ca30c; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --surface-2: #232321;
+    --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --accent: #3987e5; --risk-up: #e66767; --risk-down: #3987e5;
+    --good-ink: #0ca30c; --shadow: none;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--page); color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px 64px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* Header */
+  header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 22px 0 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
+  .brand svg { width: 28px; height: 28px; color: var(--accent); flex: none; }
+  .brand h1 { font-size: 18px; margin: 0; letter-spacing: -0.01em; }
+  .brand small { display: block; color: var(--muted); font-size: 12.5px; font-weight: 400; }
+  .links { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .chip-link {
+    font-size: 13px; color: var(--ink-2); text-decoration: none;
+    border: 1px solid var(--border); border-radius: 999px; padding: 5px 11px; background: var(--surface);
+  }
+  .chip-link:hover { color: var(--ink); border-color: var(--axis); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.ok { background: var(--good); } .dot.bad { background: var(--critical); }
+  .icon-btn {
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink-2);
+    width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: grid; place-items: center;
+  }
+
+  /* Tabs */
+  nav.tabs { display: flex; gap: 4px; box-shadow: inset 0 -1px 0 var(--grid); margin-bottom: 22px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+  nav.tabs button {
+    background: none; border: 0; border-bottom: 2px solid transparent; color: var(--ink-2);
+    padding: 10px 14px; font: inherit; font-weight: 500; cursor: pointer; white-space: nowrap;
+  }
+  nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  section[role="tabpanel"][hidden] { display: none; }
+
+  /* Cards & layout */
+  .grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+  @media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; box-shadow: var(--shadow); min-width: 0; }
+  .card h2 { font-size: 15px; margin: 0 0 4px; }
+  .card .sub { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  /* Controls */
+  .btn {
+    font: inherit; font-size: 14px; font-weight: 500; border-radius: 9px; cursor: pointer;
+    padding: 8px 14px; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink);
+  }
+  .btn:hover { border-color: var(--axis); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn.primary:hover { filter: brightness(1.06); }
+  .btn[disabled] { opacity: .55; cursor: progress; }
+  .preset[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  label.field { display: grid; gap: 4px; font-size: 12.5px; color: var(--ink-2); }
+  input.in {
+    font: inherit; font-size: 14px; color: var(--ink); background: var(--page);
+    border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; width: 100%; min-width: 0;
+  }
+  input.in:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  input.in.invalid { border-color: var(--critical); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+  details.more { margin: 4px 0 16px; }
+  details.more summary { cursor: pointer; color: var(--ink-2); font-size: 13.5px; }
+  .vgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin-top: 12px; }
+  .vgrid label.field { font-size: 11.5px; }
+  .vgrid input.in { font-size: 12.5px; padding: 5px 7px; }
+
+  /* Verdict */
+  .empty { color: var(--muted); text-align: center; padding: 48px 12px; border: 1px dashed var(--grid); border-radius: 12px; }
+  .verdict { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px; font-weight: 650; font-size: 20px;
+    padding: 8px 16px; border-radius: 10px; letter-spacing: -0.01em;
+  }
+  .badge svg { width: 20px; height: 20px; }
+  .badge.fraud { background: color-mix(in srgb, var(--critical) 14%, transparent); color: var(--critical); }
+  .badge.legit { background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good-ink); }
+  .meta { color: var(--muted); font-size: 13px; }
+  .meter-label { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; }
+  .meter-label b { color: var(--ink); font-size: 22px; }
+  .meter { position: relative; height: 10px; border-radius: 6px; background: var(--surface-2); overflow: hidden; }
+  .meter > span { position: absolute; inset: 0 auto 0 0; border-radius: 6px; background: var(--risk-up); transition: width .5s ease; }
+  .meter-scale { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+  /* Bar charts (HTML) */
+  .chart-title { font-size: 13.5px; font-weight: 600; margin: 22px 0 2px; }
+  .chart-note { font-size: 12.5px; color: var(--muted); margin: 0 0 10px; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); margin-bottom: 10px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .bars { display: grid; gap: 2px; }
+  .bar-row {
+    display: grid; grid-template-columns: 64px minmax(0, 1fr) 64px; align-items: center; gap: 10px;
+    padding: 3px 4px; border-radius: 6px; font-size: 12.5px; position: relative;
+  }
+  .bar-row:hover { background: var(--surface-2); }
+  .bar-row .lab { color: var(--ink-2); font-weight: 500; }
+  .bar-row .val { color: var(--ink-2); text-align: right; }
+  .track { position: relative; height: 16px; }
+  .track .zero { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--axis); left: 50%; }
+  .track .bar { position: absolute; top: 2px; height: 12px; }
+  .track .bar.up { left: 50%; background: var(--risk-up); border-radius: 0 4px 4px 0; }
+  .track .bar.down { right: 50%; background: var(--risk-down); border-radius: 4px 0 0 4px; }
+  .track .bar.mag { left: 0; background: var(--accent); border-radius: 0 4px 4px 0; }
+  .track .thr { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 1.5px dashed var(--critical); }
+  .bar-row.drifted .lab { color: var(--ink); font-weight: 650; }
+
+  /* Tooltip */
+  #tip {
+    position: fixed; pointer-events: none; z-index: 10; opacity: 0; transition: opacity .1s;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 10px; font-size: 12.5px; box-shadow: 0 6px 24px rgba(0,0,0,.14); max-width: 260px;
+  }
+  #tip .k { color: var(--muted); }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .stat .k { font-size: 12.5px; color: var(--muted); }
+  .stat .v { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; margin-top: 2px; }
+  .stat .d { font-size: 12.5px; color: var(--ink-2); }
+  .status { display: inline-flex; align-items: center; gap: 6px; font-weight: 650; }
+  .status svg { width: 18px; height: 18px; }
+  .status.alert { color: var(--critical); } .status.ok { color: var(--good-ink); }
+
+  /* Drop zone & table */
+  .drop {
+    border: 1.5px dashed var(--axis); border-radius: 12px; padding: 26px 16px; text-align: center;
+    color: var(--ink-2); cursor: pointer; transition: background .15s, border-color .15s;
+  }
+  .drop.over, .drop:hover { background: var(--surface-2); border-color: var(--accent); }
+  .drop b { color: var(--ink); }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--grid); border-radius: 10px; margin-top: 12px; max-height: 360px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th { position: sticky; top: 0; background: var(--surface-2); color: var(--ink-2); font-weight: 600; font-size: 12px; }
+  th:first-child, td:first-child { text-align: left; }
+  tr:last-child td { border-bottom: 0; }
+  .tag { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+  .tag.fraud { color: var(--critical); background: color-mix(in srgb, var(--critical) 13%, transparent); }
+  .tag.legit { color: var(--good-ink); background: color-mix(in srgb, var(--good) 13%, transparent); }
+
+  .error {
+    border: 1px solid color-mix(in srgb, var(--critical) 40%, transparent);
+    background: color-mix(in srgb, var(--critical) 8%, transparent);
+    color: var(--ink); border-radius: 10px; padding: 12px 14px; font-size: 13.5px;
+  }
+  .error b { color: var(--critical); }
+  .error code { font-size: 12.5px; }
+  .spinner { width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; display: inline-block; animation: spin .7s linear infinite; vertical-align: -2px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+  .toggle-table { margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+      <h1>Fraud Detection Console <small>Credit card MLOps · XGBoost + SHAP + Evidently</small></h1>
+    </div>
+    <span class="pill" id="apiStatus"><span class="dot"></span><span>Checking API…</span></span>
+    <div class="links">
+      <a class="chip-link" id="lnkGrafana" target="_blank" rel="noopener">Grafana ↗</a>
+      <a class="chip-link" id="lnkProm" target="_blank" rel="noopener">Prometheus ↗</a>
+      <a class="chip-link" href="/docs" target="_blank" rel="noopener">API docs ↗</a>
+    </div>
+    <button class="icon-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme">◐</button>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" aria-controls="tab-score" id="t-score">Score a transaction</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-batch" id="t-batch">Batch scoring</button>
+    <button role="tab" aria-selected="false" aria-controls="tab-drift" id="t-drift">Drift monitor</button>
+  </nav>
+
+  <!-- ============ SCORE ============ -->
+  <section role="tabpanel" id="tab-score">
+    <div class="grid">
+      <div class="card">
+        <h2>Transaction</h2>
+        <p class="sub">Load a sample from the test set, or edit any value. V1–V28 are anonymised PCA components.</p>
+        <div class="row">
+          <button class="btn preset" data-preset="legit" aria-pressed="false">Legitimate sample</button>
+          <button class="btn preset" data-preset="fraud" aria-pressed="false">Fraud sample</button>
+          <button class="btn preset" data-preset="bad" aria-pressed="false">Malformed input</button>
+        </div>
+        <div class="two">
+          <label class="field">Amount (€)<input class="in num" id="f-Amount" inputmode="decimal"></label>
+          <label class="field">Time (s since first txn)<input class="in num" id="f-Time" inputmode="decimal"></label>
+        </div>
+        <details class="more">
+          <summary>All 28 PCA features</summary>
+          <div class="vgrid" id="vgrid"></div>
+        </details>
+        <button class="btn primary" id="scoreBtn" style="width:100%">Score transaction</button>
+        <p class="hint">Calls <code>POST /prediction_api</code>. Every call also feeds the drift monitor's input buffer.</p>
+      </div>
+
+      <div class="card" id="resultCard">
+        <h2>Model decision</h2>
+        <p class="sub">Fraud probability and the features that drove it.</p>
+        <div id="result"><div class="empty">Pick a sample and press <b>Score transaction</b>.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BATCH ============ -->
+  <section role="tabpanel" id="tab-batch" hidden>
+    <div class="card" style="margin-bottom:16px">
+      <h2>Score a CSV of transactions</h2>
+      <p class="sub">Needs columns Time, V1–V28, Amount. If a <code>Class</code> column is present, results are checked against it.</p>
+      <div class="drop" id="drop" tabindex="0">
+        <b>Drop a CSV here</b> or click to choose a file
+        <input type="file" id="file" accept=".csv,text/csv" hidden>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="sampleBatchBtn">Use sample batch (200 test transactions)</button>
+        <button class="btn" id="downloadBtn" hidden>Download predictions.csv</button>
+        <span class="meta" id="batchMeta"></span>
+      </div>
+    </div>
+    <div id="batchResult"></div>
+  </section>
+
+  <!-- ============ DRIFT ============ -->
+  <section role="tabpanel" id="tab-drift" hidden>
+    <div class="row" style="justify-content:space-between; margin-bottom:14px">
+      <div>
+        <h2 style="font-size:15px;margin:0">Input drift vs. training data</h2>
+        <div class="meta">Evidently compares recent inference inputs with the training distribution. It runs automatically every 500 inputs, or on demand.</div>
+      </div>
+      <div class="row">
+        <button class="btn" id="refreshDrift">Refresh</button>
+        <button class="btn primary" id="runDrift">Run drift check now</button>
+      </div>
+    </div>
+    <div id="driftResult"><div class="empty">Loading…</div></div>
+  </section>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+(() => {
+  "use strict";
+  const FEATURES = ["Time", ...Array.from({length: 28}, (_, i) => "V" + (i + 1)), "Amount"];
+  const ALERT_SHARE = 0.3;          // config.DRIFT_ALERT_SHARE
+  const COLUMN_THRESHOLD = 0.1;     // Evidently default per-column threshold (normed Wasserstein)
+
+  // Real rows from the held-out test set (same as demo/*.json).
+  const LEGIT = {"Time":160760.0,"V1":-0.674466064578314,"V2":1.40810501967799,"V3":-1.11062205357093,"V4":-1.32836577843066,"V5":1.38899603254837,"V6":-1.30843906707795,"V7":1.88587890268717,"V8":-0.614232966299775,"V9":0.311652212453101,"V10":0.65075700363522,"V11":-0.857784661547805,"V12":-0.229961445775592,"V13":-0.19981700479103,"V14":0.266371326329879,"V15":-0.0465441684754424,"V16":-0.741398089749789,"V17":-0.605616644106022,"V18":-0.39256818789208,"V19":-0.162648311024695,"V20":0.394321820843914,"V21":0.0800842396026648,"V22":0.810033595602455,"V23":-0.224327230436412,"V24":0.707899237446867,"V25":-0.13583702273753,"V26":0.0451021964988772,"V27":0.533837219064273,"V28":0.291319252625364,"Amount":23.0};
+  const FRAUD = {"Time":57007.0,"V1":-1.27124419171437,"V2":2.46267526851135,"V3":-2.85139500331783,"V4":2.3244800653478,"V5":-1.37224488981369,"V6":-0.948195686538643,"V7":-3.06523436172054,"V8":1.16692694787211,"V9":-2.26877058844813,"V10":-4.88114292689057,"V11":2.25514748870463,"V12":-4.68638689759229,"V13":0.652374668512965,"V14":-6.17428834800643,"V15":0.594379608016446,"V16":-4.84969238709652,"V17":-6.53652073527011,"V18":-3.11909388163881,"V19":1.71549441975915,"V20":0.560478075726644,"V21":0.652941051330455,"V22":0.0819309763507574,"V23":-0.221347831198339,"V24":-0.523582159233306,"V25":0.224228161862968,"V26":0.756334522703558,"V27":0.632800477330469,"V28":0.250187092757197,"Amount":0.01};
+  const PRESETS = { legit: LEGIT, fraud: FRAUD, bad: {...LEGIT, Amount: "abc"} };
+
+  const $ = (s, r = document) => r.querySelector(s);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const fmt = (n, d = 2) => Number(n).toLocaleString(undefined, {minimumFractionDigits: d, maximumFractionDigits: d});
+  const ICON_ALERT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17.5v.01"/></svg>';
+  const ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>';
+  const spin = label => `<span class="spinner"></span> ${label}`;
+
+  // ---------- theme ----------
+  const root = document.documentElement;
+  try { const t = localStorage.getItem("theme"); if (t) root.dataset.theme = t; } catch (_) {}
+  $("#themeBtn").onclick = () => {
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem("theme", root.dataset.theme); } catch (_) {}
+  };
+
+  // ---------- links + health ----------
+  const host = location.hostname || "localhost";
+  $("#lnkGrafana").href = `http://${host}:3000/d/fraud-input-drift?orgId=1&from=now-30m&to=now&refresh=10s`;
+  $("#lnkProm").href = `http://${host}:9090/alerts`;
+  fetch("/").then(r => r.ok ? r.json() : Promise.reject())
+    .then(() => { $("#apiStatus").innerHTML = '<span class="dot ok"></span><span>API online</span>'; })
+    .catch(() => { $("#apiStatus").innerHTML = '<span class="dot bad"></span><span>API unreachable</span>'; });
+
+  // ---------- tabs ----------
+  const tabs = [...document.querySelectorAll('[role="tab"]')];
+  function selectTab(btn) {
+    tabs.forEach(b => {
+      const on = b === btn;
+      b.setAttribute("aria-selected", on);
+      document.getElementById(b.getAttribute("aria-controls")).hidden = !on;
+    });
+    if (btn.id === "t-drift") loadDrift();
+    try { localStorage.setItem("tab", btn.id); } catch (_) {}
+  }
+  tabs.forEach(b => b.onclick = () => selectTab(b));
+  try { const t = localStorage.getItem("tab"); if (t && document.getElementById(t)) selectTab(document.getElementById(t)); } catch (_) {}
+
+  // ---------- tooltip ----------
+  const tip = $("#tip");
+  document.addEventListener("mousemove", e => {
+    const el = e.target.closest("[data-tip]");
+    if (!el) { tip.style.opacity = 0; return; }
+    tip.innerHTML = el.dataset.tip;
+    const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = e.clientX + pad, y = e.clientY + pad;
+    if (x + w > innerWidth - 8) x = e.clientX - w - pad;
+    if (y + h > innerHeight - 8) y = e.clientY - h - pad;
+    tip.style.left = x + "px"; tip.style.top = y + "px"; tip.style.opacity = 1;
+  });
+
+  // ---------- form ----------
+  const vgrid = $("#vgrid");
+  FEATURES.filter(f => f.startsWith("V")).forEach(f => {
+    vgrid.insertAdjacentHTML("beforeend", `<label class="field">${f}<input class="in num" id="f-${f}" inputmode="decimal"></label>`);
+  });
+  function fill(obj) {
+    FEATURES.forEach(f => {
+      const el = $("#f-" + f), v = obj[f];
+      el.value = typeof v === "number" ? +v.toFixed(6) : v;
+      el.classList.remove("invalid");
+    });
+  }
+  document.querySelectorAll(".preset").forEach(b => b.onclick = () => {
+    document.querySelectorAll(".preset").forEach(x => x.setAttribute("aria-pressed", x === b));
+    fill(PRESETS[b.dataset.preset]);
+  });
+  FEATURES.forEach(f => $("#f-" + f).addEventListener("input", () => {
+    document.querySelectorAll(".preset").forEach(x => x.setAttribute("aria-pressed", "false"));
+  }));
+  fill(LEGIT);
+  document.querySelector('[data-preset="legit"]').setAttribute("aria-pressed", "true");
+
+  function readForm() {
+    const body = {};
+    FEATURES.forEach(f => {
+      const raw = $("#f-" + f).value.trim();
+      const n = Number(raw);
+      // Send non-numeric values as-is so the API's typed schema rejects them (that's the demo).
+      body[f] = raw !== "" && Number.isFinite(n) ? n : raw;
+    });
+    return body;
+  }
+
+  // ---------- score ----------
+  $("#scoreBtn").onclick = async () => {
+    const btn = $("#scoreBtn"), out = $("#result");
+    FEATURES.forEach(f => $("#f-" + f).classList.remove("invalid"));
+    btn.disabled = true; btn.innerHTML = spin("Scoring…");
+    const t0 = performance.now();
+    try {
+      const res = await fetch("/prediction_api", {
+        method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(readForm())
+      });
+      const ms = performance.now() - t0;
+      const data = await res.json();
+      if (res.status === 422) return renderValidation(out, data);
+      if (!res.ok) throw new Error(data.detail || res.statusText);
+      renderResult(out, data, ms);
+    } catch (err) {
+      out.innerHTML = `<div class="error"><b>Request failed.</b> ${esc(err.message)}</div>`;
+    } finally {
+      btn.disabled = false; btn.textContent = "Score transaction";
+    }
+  };
+
+  function renderValidation(out, data) {
+    const items = (data.detail || []).map(d => {
+      const field = (d.loc || []).slice(-1)[0];
+      const el = field && $("#f-" + field); if (el) el.classList.add("invalid");
+      return `<li><code>${esc(field)}</code>: ${esc(d.msg)}</li>`;
+    }).join("");
+    out.innerHTML = `<div class="verdict"><span class="badge fraud">${ICON_ALERT} Rejected (HTTP 422)</span></div>
+      <div class="error"><b>Input validation stopped this request before it reached the model.</b>
+      <ul style="margin:8px 0 0;padding-left:18px">${items}</ul></div>
+      <p class="hint">Every field is a typed float in the API schema, so bad data can't reach the model silently.</p>`;
+  }
+
+  function renderResult(out, d, ms) {
+    const fraud = d.status === "Fraud";
+    const p = d.fraud_probability;
+    const pct = p * 100;
+    const pctTxt = pct < 0.01 ? "<0.01" : pct > 99.99 ? ">99.99" : pct < 1 || pct > 99 ? fmt(pct, 2) : fmt(pct, 1);
+    let html = `<div class="verdict">
+        <span class="badge ${fraud ? "fraud" : "legit"}">${fraud ? ICON_ALERT : ICON_OK} ${fraud ? "Fraud" : "Legitimate"}</span>
+        <span class="meta num">Answered in ${fmt(ms / 1000, 1)} s</span>
+      </div>
+      <div class="meter-label"><span>Fraud probability</span><b class="num">${pctTxt}%</b></div>
+      <div class="meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct.toFixed(2)}"><span style="width:${Math.max(pct, 0.6)}%"></span></div>
+      <div class="meter-scale"><span>0%</span><span>50%</span><span>100%</span></div>`;
+
+    if (d.explanation && d.explanation.top_features) {
+      const feats = d.explanation.top_features;
+      const max = Math.max(...feats.map(f => Math.abs(f.shap_value)), 1e-9);
+      html += `<div class="chart-title">Why the model flagged it</div>
+        <p class="chart-note">Top ${feats.length} SHAP contributions in log-odds. Bars to the right push toward fraud.</p>
+        <div class="legend"><span><i style="background:var(--risk-up)"></i>Increases fraud risk</span><span><i style="background:var(--risk-down)"></i>Decreases fraud risk</span></div>
+        <div class="bars" role="list">` +
+        feats.map(f => {
+          const w = Math.abs(f.shap_value) / max * 50;
+          const up = f.shap_value > 0;
+          const tipTxt = `<b>${esc(f.feature)}</b><br><span class="k">Value</span> ${fmt(f.value, 3)}<br><span class="k">SHAP</span> ${f.shap_value > 0 ? "+" : ""}${fmt(f.shap_value, 3)} log-odds<br>${up ? "Pushes toward fraud" : "Pushes toward legit"}`;
+          return `<div class="bar-row" role="listitem" data-tip="${esc(tipTxt)}">
+            <span class="lab">${esc(f.feature)}</span>
+            <span class="track"><span class="zero"></span><span class="bar ${up ? "up" : "down"}" style="width:${w}%"></span></span>
+            <span class="val num">${f.shap_value > 0 ? "+" : ""}${fmt(f.shap_value, 2)}</span></div>`;
+        }).join("") + `</div>`;
+    } else {
+      html += `<p class="hint" style="margin-top:18px">SHAP explanations are computed only for fraud-flagged transactions, so legitimate ones stay fast.</p>`;
+    }
+    out.innerHTML = html;
+  }
+
+  // ---------- batch ----------
+  let lastCsv = null;
+  const drop = $("#drop"), file = $("#file");
+  drop.onclick = () => file.click();
+  drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); file.click(); } };
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+  drop.ondragleave = () => drop.classList.remove("over");
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); if (e.dataTransfer.files[0]) scoreBatch(e.dataTransfer.files[0]); };
+  file.onchange = () => { if (file.files[0]) scoreBatch(file.files[0]); file.value = ""; };
+
+  $("#sampleBatchBtn").onclick = async () => {
+    const res = await fetch("/ui/sample_batch.csv");
+    if (!res.ok) { $("#batchResult").innerHTML = `<div class="error"><b>Sample batch not found.</b> Expected <code>frontend/sample_batch.csv</code>.</div>`; return; }
+    scoreBatch(new File([await res.blob()], "sample_batch.csv", {type: "text/csv"}));
+  };
+  $("#downloadBtn").onclick = () => {
+    if (!lastCsv) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([lastCsv], {type: "text/csv"}));
+    a.download = "predictions.csv"; a.click(); URL.revokeObjectURL(a.href);
+  };
+
+  function parseCsv(text) {
+    const lines = text.trim().split(/\r?\n/);
+    const head = lines[0].split(",");
+    return { head, rows: lines.slice(1).map(l => { const c = l.split(","); const o = {}; head.forEach((h, i) => o[h] = c[i]); return o; }) };
+  }
+
+  async function scoreBatch(f) {
+    const out = $("#batchResult"), meta = $("#batchMeta");
+    $("#downloadBtn").hidden = true;
+    meta.innerHTML = spin(`Scoring ${esc(f.name)}…`);
+    const t0 = performance.now();
+    try {
+      const fd = new FormData(); fd.append("file", f);
+      const res = await fetch("/batch_prediction", { method: "POST", body: fd });
+      const type = res.headers.get("content-type") || "";
+      if (!res.ok || type.includes("json")) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || j.detail || res.statusText);
+      }
+      lastCsv = await res.text();
+      const ms = performance.now() - t0;
+      meta.textContent = `${f.name} · scored in ${fmt(ms / 1000, 1)} s`;
+      $("#downloadBtn").hidden = false;
+      renderBatch(out, parseCsv(lastCsv));
+    } catch (err) {
+      meta.textContent = "";
+      out.innerHTML = `<div class="error"><b>Batch failed.</b> ${esc(err.message)}</div>`;
+    }
+  }
+
+  function renderBatch(out, {rows}) {
+    const n = rows.length;
+    const flagged = rows.filter(r => r.Prediction === "fraud");
+    const hasLabel = rows.length && "Class" in rows[0] && rows.some(r => Number(r.Class) === 1);
+    let stats = `<div class="stats">
+      <div class="stat"><div class="k">Transactions</div><div class="v num">${n}</div></div>
+      <div class="stat"><div class="k">Flagged as fraud</div><div class="v num">${flagged.length}</div><div class="d num">${fmt(flagged.length / n * 100, 1)}% of batch</div></div>`;
+    if (hasLabel) {
+      const actual = rows.filter(r => Number(r.Class) === 1);
+      const tp = rows.filter(r => Number(r.Class) === 1 && r.Prediction === "fraud").length;
+      const fp = rows.filter(r => Number(r.Class) === 0 && r.Prediction === "fraud").length;
+      stats += `<div class="stat"><div class="k">Actual fraud caught</div><div class="v num">${tp} / ${actual.length}</div><div class="d num">recall ${actual.length ? fmt(tp / actual.length * 100, 0) : "–"}%</div></div>
+        <div class="stat"><div class="k">False alarms</div><div class="v num">${fp}</div><div class="d num">precision ${flagged.length ? fmt(tp / flagged.length * 100, 0) : "–"}%</div></div>`;
+    }
+    stats += `</div>`;
+
+    const show = [...flagged, ...rows.filter(r => r.Prediction !== "fraud")].slice(0, 100);
+    const cols = ["#", "Prediction", ...(hasLabel ? ["Actual"] : []), "Amount", "V14", "V17", "V12", "V10"];
+    const table = `<div class="card"><h2>Results</h2><p class="sub">Flagged transactions first. Showing ${show.length} of ${n}; download the CSV for every row.</p>
+      <div class="table-wrap"><table><thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>` +
+      show.map(r => `<tr><td class="num">${rows.indexOf(r) + 1}</td>
+        <td><span class="tag ${r.Prediction === "fraud" ? "fraud" : "legit"}">${r.Prediction === "fraud" ? "Fraud" : "Legit"}</span></td>
+        ${hasLabel ? `<td>${Number(r.Class) === 1 ? "Fraud" : "Legit"}</td>` : ""}
+        <td class="num">${fmt(r.Amount, 2)}</td><td class="num">${fmt(r.V14, 2)}</td><td class="num">${fmt(r.V17, 2)}</td><td class="num">${fmt(r.V12, 2)}</td><td class="num">${fmt(r.V10, 2)}</td></tr>`).join("") +
+      `</tbody></table></div></div>`;
+    out.innerHTML = stats + table;
+  }
+
+  // ---------- drift ----------
+  $("#refreshDrift").onclick = () => loadDrift();
+  $("#runDrift").onclick = async () => {
+    const b = $("#runDrift"); b.disabled = true; b.innerHTML = spin("Running…");
+    try {
+      const res = await fetch("/monitoring/drift", { method: "POST" });
+      const d = await res.json();
+      if (d.status === "no_data") { $("#driftResult").innerHTML = `<div class="empty">No inputs buffered yet. Score some transactions first.</div>`; return; }
+      // The worker returns a full traceback; show only its last line.
+      if (d.status === "error") throw new Error(String(d.detail).trim().split(/\s{2,}|\n/).filter(Boolean).pop());
+      renderDrift(d);
+    } catch (err) {
+      $("#driftResult").innerHTML = `<div class="error"><b>Drift check failed.</b> ${esc(err.message)}</div>`;
+    } finally { b.disabled = false; b.textContent = "Run drift check now"; }
+  };
+
+  async function loadDrift() {
+    try {
+      const d = await (await fetch("/monitoring/drift")).json();
+      if (d.status === "no_run") { $("#driftResult").innerHTML = `<div class="empty">No drift check has run yet. Press <b>Run drift check now</b>.</div>`; return; }
+      renderDrift(d);
+    } catch (err) {
+      $("#driftResult").innerHTML = `<div class="error"><b>Couldn't load drift summary.</b> ${esc(err.message)}</div>`;
+    }
+  }
+
+  let showDriftTable = false;
+  function renderDrift(d) {
+    const share = d.drift_share, alert = d.dataset_drift_detected;
+    const when = d.timestamp ? new Date(d.timestamp * 1000).toLocaleString() : "–";
+    const feats = Object.entries(d.per_feature || {}).sort((a, b) => b[1] - a[1]);
+    const max = Math.max(COLUMN_THRESHOLD * 1.5, ...feats.map(f => f[1]));
+    const thrPct = COLUMN_THRESHOLD / max * 100;
+
+    const html = `<div class="stats">
+        <div class="stat"><div class="k">Status</div><div class="v"><span class="status ${alert ? "alert" : "ok"}">${alert ? ICON_ALERT + " Drift detected" : ICON_OK + " No drift"}</span></div><div class="d">alert when share ≥ ${ALERT_SHARE * 100}%</div></div>
+        <div class="stat"><div class="k">Drift share</div><div class="v num">${fmt(share * 100, 0)}%</div><div class="d num">${d.drifted_columns_count} of ${d.n_features} columns</div></div>
+        <div class="stat"><div class="k">Window</div><div class="v num">${d.window_size}</div><div class="d">${d.window_size < 100 ? `<span class="status alert" style="font-weight:600">${ICON_ALERT} Too few inputs to be reliable</span>` : "recent inputs compared"}</div></div>
+        <div class="stat"><div class="k">Last run</div><div class="v" style="font-size:16px;margin-top:8px">${esc(when)}</div></div>
+      </div>
+      <div class="card">
+        <h2>Per-feature drift score</h2>
+        <p class="sub">Normalised Wasserstein distance from the training distribution. The dashed line is the per-column threshold (${COLUMN_THRESHOLD}); columns past it count as drifted.</p>
+        <div class="bars" role="list">` +
+        feats.map(([name, v]) => {
+          const drifted = v >= COLUMN_THRESHOLD;
+          const t = `<b>${esc(name)}</b><br><span class="k">Score</span> ${fmt(v, 3)}<br>${drifted ? "Past threshold: drifted" : "Within threshold"}`;
+          return `<div class="bar-row ${drifted ? "drifted" : ""}" role="listitem" data-tip="${esc(t)}">
+            <span class="lab">${esc(name)}</span>
+            <span class="track"><span class="bar mag" style="width:${v / max * 100}%"></span><span class="thr" style="left:${thrPct}%"></span></span>
+            <span class="val num">${fmt(v, 2)}</span></div>`;
+        }).join("") +
+        `</div>
+        <button class="btn toggle-table" id="driftTableBtn">${showDriftTable ? "Hide" : "Show"} as table</button>
+        <div id="driftTable" ${showDriftTable ? "" : "hidden"}><div class="table-wrap"><table><thead><tr><th>Feature</th><th>Score</th><th>Drifted</th></tr></thead><tbody>
+          ${feats.map(([n, v]) => `<tr><td>${esc(n)}</td><td class="num">${fmt(v, 3)}</td><td>${v >= COLUMN_THRESHOLD ? "Yes" : "No"}</td></tr>`).join("")}
+        </tbody></table></div></div>
+        <p class="hint">Small windows give noisy scores. The production window is 500 inputs. Live history and alerting are in <a href="${$("#lnkGrafana").href}" target="_blank" rel="noopener">Grafana</a>.</p>
+      </div>`;
+    $("#driftResult").innerHTML = html;
+    $("#driftTableBtn").onclick = () => { showDriftTable = !showDriftTable; renderDrift(d); };
+  }
+})();
+</script>
+</body>
+</html>
