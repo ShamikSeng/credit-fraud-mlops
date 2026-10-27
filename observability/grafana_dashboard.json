@@ -50,7 +50,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "fraud_input_drift_share",
+          "expr": "fraud_input_drift_share{job=\"fraud-detection-api\"}",
           "legendFormat": "drift share",
           "refId": "A"
         }
@@ -82,7 +82,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "fraud_input_drift_dataset_detected",
+          "expr": "fraud_input_drift_dataset_detected{job=\"fraud-detection-api\"}",
           "refId": "A"
         }
       ]
@@ -101,13 +101,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "fraud_input_drifted_columns_count",
+          "expr": "fraud_input_drifted_columns_count{job=\"fraud-detection-api\"}",
           "legendFormat": "drifted cols",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "fraud_input_drift_window_size",
+          "expr": "fraud_input_drift_window_size{job=\"fraud-detection-api\"}",
           "legendFormat": "window size",
           "refId": "B"
         }
@@ -128,7 +128,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "fraud_input_feature_drift_score",
+          "expr": "fraud_input_feature_drift_score{job=\"fraud-detection-api\"}",
           "legendFormat": "{{feature}}",
           "refId": "A"
         }

@@ -1,4 +1,5 @@
 from fastapi import FastAPI , File, UploadFile, BackgroundTasks
+import json
 from fastapi.responses import StreamingResponse, FileResponse, RedirectResponse
 from fastapi import HTTPException
 import uvicorn
@@ -43,7 +44,7 @@ def save_batch_prediction(file_content, filename):
 mlflow.set_tracking_uri(config.TRACKING_URI)
 
 app = FastAPI(
-    title="Credit Card Fraud Detection App using FastAPI - MLOps",
+    title=f"Fraud Detection API - {config.DATASET_TITLE}",
     description = "MLOps Demo",
     version='1.0'
 )
@@ -85,8 +86,12 @@ def index():
 # `/` stays JSON (health check); the UI lives at /ui.
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_INDEX = os.path.join(BASE_DIR, "frontend", "index.html")
-# 200 held-out test rows (185 legit + 15 fraud, with Class) so batch scoring can be checked.
-SAMPLE_BATCH = os.path.join(BASE_DIR, "frontend", "sample_batch.csv")
+# ULB: 200 held-out test rows (185 legit + 15 fraud, with Class) so batch scoring can be checked.
+# UPI: 300 held-out payments from days 60-89 (30 fraud, with is_fraud and fraud_type).
+SAMPLE_BATCH = os.path.join(BASE_DIR, "frontend",
+                            "sample_batch.csv" if config.DATASET == "ulb" else "upi_sample_batch.csv")
+PRESETS_FILE = os.path.join(BASE_DIR, "frontend", f"presets_{config.DATASET}.json")
+GRAFANA_DASHBOARD = "fraud-input-drift" if config.DATASET == "ulb" else "upi-input-drift"
 
 
 @app.get("/ui", include_in_schema=False)
@@ -102,8 +107,32 @@ def ui_slash():
 @app.get("/ui/sample_batch.csv", include_in_schema=False)
 def ui_sample_batch():
     if not os.path.exists(SAMPLE_BATCH):
-        raise HTTPException(status_code=404, detail="frontend/sample_batch.csv not found")
+        raise HTTPException(status_code=404, detail=f"{os.path.basename(SAMPLE_BATCH)} not found")
     return FileResponse(SAMPLE_BATCH, media_type="text/csv")
+
+
+@app.get("/ui/schema", include_in_schema=False)
+def ui_schema():
+    """Everything the console needs to render the form for whichever dataset this service runs."""
+    fields = [{"name": f, "type": "category", "options": config.CATEGORICAL_FEATURES[f]}
+              if f in config.CATEGORICAL_FEATURES else {"name": f, "type": "number"}
+              for f in config.FEATURES]
+    fields += [{"name": f, "type": "number", "optional": True} for f in config.METADATA_FIELDS]
+    presets = {}
+    if os.path.exists(PRESETS_FILE):
+        with open(PRESETS_FILE, encoding="utf-8") as fh:
+            presets = json.load(fh)
+    return {
+        "dataset": config.DATASET,
+        "title": config.DATASET_TITLE,
+        "fields": fields,
+        "primary": ["Amount", "Time"] if config.DATASET == "ulb" else [f["name"] for f in fields],
+        "target": config.TARGET,
+        "presets": presets,
+        "drift_window": config.DRIFT_WINDOW,
+        "drift_features": len(config.DRIFT_FEATURES),
+        "grafana_dashboard": GRAFANA_DASHBOARD,
+    }
 
 @app.post("/prediction_api", response_model=PredictionResponse)
 def predict(transaction: TransactionFeatures, background_tasks: BackgroundTasks):
@@ -114,6 +143,7 @@ def predict(transaction: TransactionFeatures, background_tasks: BackgroundTasks)
         "status": _label(result["prediction"]),
         "fraud_probability": result["fraud_probability"],
         "explanation": result["explanation"],   # None unless fraud-flagged
+        "model_version": result["model_version"],
     }
 
 
@@ -161,14 +191,16 @@ async def batch_predict(file: UploadFile = File(...)):
     if not all(column in df.columns for column in required_columns):
         return {"error": "CSV file does not contain the required columns."}
 
-    predictions = generate_predictions_batch(df)["prediction"]
+    scored = generate_predictions_batch(df)
 
-    df['Prediction'] = predictions
+    df['Prediction'] = scored["prediction"]
     result = df.to_csv(index=False)
 
     save_batch_prediction(result.encode('utf-8'), file.filename)
 
-    return StreamingResponse(io.BytesIO(result.encode('utf-8')), media_type="text/csv", headers={"Content-Disposition":"attachment; filename=predictions.csv"})
+    return StreamingResponse(io.BytesIO(result.encode('utf-8')), media_type="text/csv",
+                             headers={"Content-Disposition": "attachment; filename=predictions.csv",
+                                      "X-Model-Version": str(scored["model_version"])})
 
 
 

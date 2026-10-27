@@ -8,3 +8,4 @@ prediction_model/datasets/*.csv
 .dvc/cache/
 batch_predictions/
 prediction_model/monitoring/reference_data.csv
+prediction_model/monitoring/upi_reference_data.csv

@@ -27,11 +27,17 @@ _RUN_ID_LOCK = threading.Lock()
 
 
 def _query_best_run_id():
-    """Resolve the current 'best' run by PR-AUC (the right criterion for this imbalance)."""
+    """Resolve the current 'best' run by PR-AUC (the right criterion for this imbalance), in
+    the active dataset's experiment (config.EXPERIMENT_NAME)."""
     experiment = mlflow.get_experiment_by_name(config.EXPERIMENT_NAME)
     runs_df = mlflow.search_runs(experiment_ids=experiment.experiment_id,
                                  order_by=['metrics.pr_auc DESC'])
     return runs_df.iloc[0]['run_id']
+
+
+def current_model_version():
+    """The MLflow run id of the model currently answering requests."""
+    return _CACHE["run_id"]
 
 
 def _refresh_run_id():
@@ -104,7 +110,8 @@ def generate_prediction_with_explanation(data_input):
 
     return {"prediction": prediction,
             "fraud_probability": fraud_probability,
-            "explanation": explanation}
+            "explanation": explanation,
+            "model_version": current_model_version()}
 
 
 def generate_predictions_batch(data_input):
@@ -115,4 +122,4 @@ def generate_predictions_batch(data_input):
     model = _load_best_model()
     prediction = model.predict(data)
     output = np.where(prediction == 1, 'fraud', 'legit')
-    return {"prediction": output}
+    return {"prediction": output, "model_version": current_model_version()}

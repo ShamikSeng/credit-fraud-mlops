@@ -25,3 +25,12 @@ scrape_configs:
       - targets: ["app:8005"]
         labels:
           service: "fraud-detection"
+
+  # The UPI service exports the same metric names; dashboards and alerts tell the two apart
+  # by job.
+  - job_name: "fraud-detection-upi"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app-upi:8005"]
+        labels:
+          service: "fraud-detection-upi"

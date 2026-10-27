@@ -18,6 +18,21 @@ services:
       - ./prediction_model/monitoring/reference_data.csv:/app/prediction_model/monitoring/reference_data.csv:ro
       - ./batch_predictions:/app/batch_predictions
 
+  # Same image, second dataset: the simulated UPI stream (named, readable features).
+  # Prerequisites (host, once): python -m prediction_model.upi.simulate
+  #                             python -m prediction_model.upi.train
+  app-upi:
+    build: .
+    image: credit-fraud-mlops:latest
+    environment:
+      - DATASET=upi
+    ports:
+      - "8006:8005"
+    volumes:
+      - ./mlruns:/app/mlruns
+      - ./prediction_model/monitoring/upi_reference_data.csv:/app/prediction_model/monitoring/upi_reference_data.csv:ro
+      - ./batch_predictions:/app/batch_predictions
+
   prometheus:
     image: prom/prometheus:v2.53.0
     ports:
@@ -27,6 +42,7 @@ services:
       - ./observability/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
     depends_on:
       - app
+      - app-upi
 
   grafana:
     image: grafana/grafana:11.1.0
@@ -41,5 +57,6 @@ services:
       - ./observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ./observability/grafana/provisioning/dashboards/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
       - ./observability/grafana_dashboard.json:/etc/grafana/provisioning/dashboards/files/grafana_dashboard.json:ro
+      - ./observability/upi_dashboard.json:/etc/grafana/provisioning/dashboards/files/upi_dashboard.json:ro
     depends_on:
       - prometheus

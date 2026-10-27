@@ -43,3 +43,26 @@ class RobustScalerTransformer(BaseEstimator,TransformerMixin):
         X = X.copy()
         X[self.variables] = self.scaler_.transform(X[self.variables])
         return X
+
+
+class OneHotTransformer(BaseEstimator,TransformerMixin):
+    """One-hot encode categorical columns against a FIXED category list, keeping a DataFrame.
+
+    Each category becomes a 0/1 column named "<feature>=<value>" (e.g. "upi_app=Paytm"),
+    and the original column is dropped. The fixed list (not one learned from the data) means
+    every model trained on this data has the same columns, and an unseen value simply encodes as all
+    zeros. The "=" naming lets explain.py add the dummies' SHAP values back up to one
+    contribution per original feature."""
+    def __init__(self,categories=None):
+        self.categories = categories
+
+    def fit(self,X,y=None):
+        return self
+
+    def transform(self,X):
+        X = X.copy()
+        for col, values in self.categories.items():
+            column = X.pop(col).astype(str)
+            for value in values:
+                X[f"{col}={value}"] = (column == value).astype(float)
+        return X

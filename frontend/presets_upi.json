@@ -1,0 +1,78 @@
+{
+  "legit": {
+    "label": "Legitimate payment",
+    "values": {
+      "amount": 198.76,
+      "hour": 10,
+      "day_of_week": 1,
+      "txn_type": "P2M",
+      "merchant_category": "grocery",
+      "upi_app": "GooglePay",
+      "device_type": "Android",
+      "payer_bank": "BoB",
+      "state": "Karnataka",
+      "is_new_device": 0,
+      "is_new_payee": 0,
+      "payee_vpa_age_days": 349,
+      "txns_last_24h": 2,
+      "amount_to_user_avg": 1.67
+    }
+  },
+  "takeover": {
+    "label": "Account takeover",
+    "values": {
+      "amount": 4891.55,
+      "hour": 4,
+      "day_of_week": 3,
+      "txn_type": "P2P",
+      "merchant_category": "p2p_transfer",
+      "upi_app": "Paytm",
+      "device_type": "Android",
+      "payer_bank": "PNB",
+      "state": "Telangana",
+      "is_new_device": 1,
+      "is_new_payee": 1,
+      "payee_vpa_age_days": 99,
+      "txns_last_24h": 8,
+      "amount_to_user_avg": 12.287
+    }
+  },
+  "scam": {
+    "label": "Festive-season scam",
+    "values": {
+      "amount": 82.22,
+      "hour": 16,
+      "day_of_week": 1,
+      "txn_type": "P2M",
+      "merchant_category": "ecommerce",
+      "upi_app": "GooglePay",
+      "device_type": "Android",
+      "payer_bank": "Axis",
+      "state": "Other",
+      "is_new_device": 0,
+      "is_new_payee": 1,
+      "payee_vpa_age_days": 3,
+      "txns_last_24h": 2,
+      "amount_to_user_avg": 1.025
+    }
+  },
+  "bad": {
+    "label": "Malformed input",
+    "values": {
+      "amount": 198.76,
+      "hour": 10,
+      "day_of_week": 1,
+      "txn_type": "P2M",
+      "merchant_category": "casino",
+      "upi_app": "GooglePay",
+      "device_type": "Android",
+      "payer_bank": "BoB",
+      "state": "Karnataka",
+      "is_new_device": 0,
+      "is_new_payee": 0,
+      "payee_vpa_age_days": 349,
+      "txns_last_24h": 2,
+      "amount_to_user_avg": 1.67
+    }
+  }
+}

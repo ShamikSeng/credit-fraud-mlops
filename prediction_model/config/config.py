@@ -86,3 +86,32 @@ EXPERIMENT_NAME="fraud_detection_model"
 RUN_ID_CACHE_SECONDS = float(os.getenv("RUN_ID_CACHE_SECONDS", "60"))
 
 MODEL_NAME="/fraud-detection-model"
+
+# --- Dataset selection ---------------------------------------------------------------------
+# One codebase serves two datasets. "ulb" (default) is everything above, unchanged. "upi" is
+# the simulated UPI stream (prediction_model/upi): named numeric and categorical features, so
+# the SHAP explanations are readable, plus the same serving, validation and drift monitoring.
+DATASET = os.getenv("DATASET", "ulb").lower()
+
+CATEGORICAL_FEATURES = {}   # feature -> allowed values (validated by the request schema)
+METADATA_FIELDS = []        # accepted on requests, never fed to the model or the drift monitor
+DATASET_TITLE = "Credit card (ULB)"
+
+# The UPI model's drift reference (written by prediction_model.upi.train).
+UPI_DRIFT_REFERENCE_FILE = os.path.join(MONITORING_DIR, "upi_reference_data.csv")
+
+if DATASET == "upi":
+    from prediction_model.upi import spec as _upi
+
+    DATA_FILE = _upi.DATA_FILE
+    TARGET = _upi.TARGET
+    FEATURES = list(_upi.FEATURES)
+    CATEGORICAL_FEATURES = dict(_upi.CATEGORIES)
+    METADATA_FIELDS = [_upi.TIME_COL]
+    ROBUST_SCALE_FEATURES = []
+    DRIFT_FEATURES = list(_upi.DRIFT_FEATURES)
+    DRIFT_REFERENCE_FILE = UPI_DRIFT_REFERENCE_FILE
+    EXPERIMENT_NAME = _upi.EXPERIMENT_NAME
+    DATASET_TITLE = "UPI payments (simulated)"
+elif DATASET != "ulb":
+    raise ValueError(f"Unknown DATASET={DATASET!r}; expected 'ulb' or 'upi'.")

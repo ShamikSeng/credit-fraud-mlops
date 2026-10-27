@@ -59,25 +59,47 @@ def _base_value(expected_value):
     return float(ev.flat[-1])
 
 
+def _source_feature(column):
+    """Model column -> the input feature it came from. One-hot columns are named
+    "<feature>=<value>" (OneHotTransformer); every other column maps to itself."""
+    return column.split('=', 1)[0]
+
+
+def _display_value(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return str(value)
+
+
 def explain_row(model, explainer, X_row, top_n):
     """Explain a single transaction.
 
     X_row: one-row DataFrame in the raw feature space (config.FEATURES columns).
     Returns {"base_value": float, "top_features": [ {feature, value, shap_value,
     direction}, ... ]} — the top_n features by |shap_value|, descending.
+
+    SHAP values are additive, so the contribution of a categorical input is exactly the sum
+    over its one-hot columns. Summing them reports "upi_app = Paytm" as one driver instead of
+    five dummy columns, and keeps base_value + sum(contributions) = model margin.
     """
     X_transformed = model[:-1].transform(X_row)
     shap_row = _positive_class_shap(explainer.shap_values(X_transformed))[0]
+
+    totals = {}
+    for i, column in enumerate(X_transformed.columns):
+        source = _source_feature(column)
+        totals[source] = totals.get(source, 0.0) + float(shap_row[i])
 
     raw = X_row.iloc[0]
     contributions = [
         {
             'feature': feature,
-            'value': float(raw[feature]),          # raw submitted value (human-readable)
-            'shap_value': float(shap_row[i]),      # contribution in log-odds/margin space
-            'direction': 'increases_fraud_risk' if shap_row[i] > 0 else 'decreases_fraud_risk',
+            'value': _display_value(raw[feature]),   # raw submitted value (human-readable)
+            'shap_value': total,                     # contribution in log-odds/margin space
+            'direction': 'increases_fraud_risk' if total > 0 else 'decreases_fraud_risk',
         }
-        for i, feature in enumerate(X_transformed.columns)
+        for feature, total in totals.items()
     ]
     contributions.sort(key=lambda c: abs(c['shap_value']), reverse=True)
 

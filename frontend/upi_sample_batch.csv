@@ -1,0 +1,301 @@
+amount,hour,day_of_week,txn_type,merchant_category,upi_app,device_type,payer_bank,state,is_new_device,is_new_payee,payee_vpa_age_days,txns_last_24h,amount_to_user_avg,fraud_type,is_fraud
+414.8,8,4,P2M,food_delivery,PhonePe,Android,Yes,Uttar Pradesh,0,0,1906,4,0.831,none,0
+597.13,16,0,P2M,fuel,Paytm,Android,SBI,Rajasthan,0,0,3088,3,1.716,none,0
+2355.19,20,0,P2M,entertainment,GooglePay,Android,HDFC,Other,0,0,1018,3,2.059,none,0
+998.11,13,0,P2M,fuel,GooglePay,Android,PNB,West Bengal,0,0,307,4,1.696,none,0
+145.18,13,4,P2M,food_delivery,PhonePe,iOS,Axis,Other,0,1,64,1,0.45,none,0
+211.98,11,5,P2M,gaming,GooglePay,Android,BoB,West Bengal,0,1,345,1,0.477,none,0
+1270.89,12,1,P2M,education,PhonePe,Android,SBI,Delhi,0,0,507,1,1.265,none,0
+391.49,7,2,P2M,food_delivery,PhonePe,Android,Kotak,Tamil Nadu,0,0,421,5,0.495,none,0
+337.87,19,5,P2M,ecommerce,PhonePe,Android,SBI,Telangana,0,0,762,1,3.765,none,0
+2359.18,9,5,P2M,education,GooglePay,iOS,ICICI,Uttar Pradesh,0,0,422,2,5.861,none,0
+348.53,15,6,P2P,p2p_transfer,PhonePe,Android,HDFC,Maharashtra,1,1,376,3,1.029,none,0
+752.52,17,4,P2M,ecommerce,PhonePe,Android,Axis,Rajasthan,0,1,189,8,1.978,none,0
+1141.55,20,1,P2P,p2p_transfer,PhonePe,Android,ICICI,Tamil Nadu,0,0,1428,1,1.465,none,0
+291.96,5,1,P2P,p2p_transfer,PhonePe,iOS,HDFC,Karnataka,0,0,198,1,0.712,none,0
+553.31,15,6,P2P,p2p_transfer,Paytm,Android,SBI,Other,0,0,1180,3,1.056,none,0
+148.65,17,3,P2M,food_delivery,PhonePe,Android,SBI,Maharashtra,0,0,1569,3,0.591,none,0
+12978.5,3,1,P2P,p2p_transfer,PhonePe,Android,SBI,Karnataka,1,1,40,3,15.504,account_takeover,1
+2875.3,20,2,P2M,ecommerce,PhonePe,Android,Axis,Tamil Nadu,0,0,1727,3,4.497,none,0
+497.96,7,0,P2M,grocery,PhonePe,Android,Canara,Uttar Pradesh,0,0,3417,3,1.085,none,0
+1416.93,7,6,P2P,p2p_transfer,BHIM,Android,PNB,Maharashtra,0,0,730,5,2.109,none,0
+1084.14,15,2,P2M,travel,PhonePe,Android,Axis,Karnataka,0,0,671,3,2.599,none,0
+764.8,18,0,P2P,p2p_transfer,Paytm,Android,Axis,Delhi,0,0,1055,2,0.815,none,0
+783.97,18,2,P2M,telecom_recharge,PhonePe,Android,HDFC,Karnataka,0,0,708,2,0.87,none,0
+570.15,2,6,P2M,travel,GooglePay,Android,Axis,Gujarat,0,0,607,2,1.52,none,0
+4112.61,20,6,P2M,ecommerce,BankApp,Android,SBI,Other,0,0,495,2,4.363,none,0
+470.31,15,0,P2M,grocery,PhonePe,Android,Axis,Uttar Pradesh,0,0,1474,3,0.651,none,0
+526.8,7,3,P2M,utilities,Paytm,Android,Yes,Maharashtra,0,0,667,4,0.549,none,0
+168.87,16,3,P2P,p2p_transfer,Paytm,Android,PNB,Uttar Pradesh,0,1,218,4,0.359,none,0
+1544.33,9,2,P2M,healthcare,PhonePe,Android,SBI,Tamil Nadu,0,1,83,4,2.294,none,0
+474.02,23,0,P2M,grocery,PhonePe,iOS,ICICI,Kerala,0,0,610,2,0.658,none,0
+838.6,9,5,P2M,travel,Paytm,Android,Kotak,Tamil Nadu,0,0,334,1,2.469,none,0
+1002.64,1,4,P2P,p2p_transfer,BankApp,Android,SBI,Rajasthan,1,1,101,8,1.705,account_takeover,1
+462.66,12,2,P2M,telecom_recharge,PhonePe,Android,SBI,Telangana,0,1,70,6,0.886,none,0
+411.23,18,6,P2P,p2p_transfer,PhonePe,iOS,HDFC,Kerala,0,0,1607,4,0.912,none,0
+391.46,22,6,P2P,p2p_transfer,GooglePay,Android,SBI,Telangana,0,0,901,2,0.84,none,0
+750.26,11,5,P2M,utilities,GooglePay,Android,PNB,Karnataka,0,0,513,2,1.308,none,0
+1655.17,22,3,P2P,p2p_transfer,GooglePay,Android,SBI,Delhi,1,1,40,6,1.869,account_takeover,1
+297.81,18,3,P2P,p2p_transfer,PhonePe,Android,SBI,Other,1,0,837,2,0.624,none,0
+164.87,22,5,P2M,grocery,PhonePe,Android,HDFC,Uttar Pradesh,0,0,721,3,0.332,none,0
+289.16,12,6,P2P,p2p_transfer,GooglePay,Android,SBI,West Bengal,0,0,1357,4,1.236,none,0
+1792.36,10,2,P2M,ecommerce,PhonePe,Android,HDFC,Karnataka,0,1,73,1,1.14,none,0
+167.99,8,0,P2M,fuel,PhonePe,Android,BoB,Kerala,0,0,819,1,0.507,none,0
+715.3,16,2,P2M,utilities,GooglePay,Android,ICICI,Tamil Nadu,0,0,237,1,1.196,none,0
+494.41,20,6,P2M,food_delivery,Paytm,iOS,SBI,Maharashtra,0,0,1402,5,0.48,none,0
+118.09,9,6,P2P,p2p_transfer,PhonePe,Android,HDFC,Kerala,0,0,372,3,0.765,none,0
+900.65,12,4,P2P,p2p_transfer,GooglePay,iOS,SBI,Uttar Pradesh,0,0,420,5,1.661,none,0
+928.58,20,5,P2M,grocery,Paytm,Android,ICICI,Other,0,0,199,3,2.284,none,0
+33.44,18,1,P2M,food_delivery,PhonePe,iOS,BoB,Maharashtra,0,0,2364,4,0.344,none,0
+730.17,12,4,P2P,p2p_transfer,GooglePay,Android,SBI,Maharashtra,0,0,530,2,1.026,none,0
+974.89,8,4,P2M,food_delivery,Paytm,Android,SBI,Uttar Pradesh,0,1,91,1,1.114,none,0
+5976.41,19,1,P2P,p2p_transfer,PhonePe,Android,ICICI,Maharashtra,1,0,141,3,9.792,account_takeover,1
+201.1,10,4,P2M,grocery,Paytm,Android,ICICI,Telangana,0,1,35,2,0.668,none,0
+96.28,12,5,P2M,grocery,PhonePe,Android,SBI,Karnataka,0,0,290,3,1.228,none,0
+5570.75,19,5,P2M,ecommerce,PhonePe,Android,BoB,Rajasthan,0,0,686,6,3.29,none,0
+204.07,11,5,P2M,fuel,PhonePe,Android,Yes,Karnataka,0,0,416,1,0.745,none,0
+763.58,17,4,P2P,p2p_transfer,PhonePe,iOS,Kotak,Rajasthan,0,0,426,1,1.305,none,0
+525.54,22,0,P2M,telecom_recharge,GooglePay,Android,SBI,Gujarat,0,0,379,3,0.537,none,0
+669.11,17,3,P2M,ecommerce,PhonePe,Android,PNB,West Bengal,0,1,139,2,2.267,none,0
+2077.51,20,1,P2P,p2p_transfer,PhonePe,Android,Yes,Uttar Pradesh,0,0,405,2,1.401,none,0
+611.69,9,6,P2M,grocery,Paytm,Android,HDFC,Maharashtra,0,0,758,5,0.879,none,0
+5578.43,2,5,P2P,p2p_transfer,GooglePay,iOS,HDFC,Karnataka,1,1,34,4,6.147,account_takeover,1
+839.43,22,1,P2P,p2p_transfer,PhonePe,Android,Kotak,Other,0,0,591,2,0.987,none,0
+1083.23,11,2,P2P,p2p_transfer,GooglePay,Android,Axis,Uttar Pradesh,0,0,416,2,1.574,none,0
+208.76,9,5,P2M,food_delivery,GooglePay,iOS,SBI,Other,1,1,52,4,0.871,none,0
+1339.23,19,3,P2P,p2p_transfer,GooglePay,Android,ICICI,Karnataka,0,1,78,5,1.461,none,0
+563.85,17,1,P2P,p2p_transfer,PhonePe,Android,PNB,Rajasthan,0,0,393,5,1.067,none,0
+354.27,9,5,P2P,p2p_transfer,PhonePe,Android,SBI,Tamil Nadu,0,0,470,3,1.216,none,0
+167.02,8,6,P2M,telecom_recharge,GooglePay,Android,HDFC,Maharashtra,0,1,56,2,0.373,none,0
+167.98,18,2,P2M,grocery,PhonePe,Android,Axis,Maharashtra,0,0,359,1,0.871,none,0
+81.98,16,5,P2M,food_delivery,PhonePe,Android,Axis,Maharashtra,0,0,904,2,0.264,none,0
+328.82,12,6,P2P,p2p_transfer,GooglePay,Android,Canara,Other,0,0,1232,4,0.922,none,0
+202.46,17,6,P2M,telecom_recharge,PhonePe,iOS,PNB,Maharashtra,0,0,2950,3,0.514,none,0
+259.29,20,5,P2M,entertainment,GooglePay,Android,SBI,Gujarat,0,0,418,4,0.716,none,0
+100.92,22,6,P2P,p2p_transfer,PhonePe,Android,BoB,Tamil Nadu,0,0,782,2,0.549,none,0
+456.32,12,4,P2M,entertainment,GooglePay,Android,Kotak,Kerala,0,0,912,3,1.178,none,0
+1311.14,21,6,P2M,utilities,PhonePe,iOS,SBI,Maharashtra,0,0,3025,1,1.562,none,0
+673.1,18,1,P2P,p2p_transfer,GooglePay,Android,SBI,Gujarat,1,1,24,12,6.972,account_takeover,1
+225.78,12,0,P2P,p2p_transfer,PhonePe,Android,SBI,Gujarat,0,0,729,2,0.446,none,0
+279.06,14,6,P2P,p2p_transfer,GooglePay,Android,PNB,Uttar Pradesh,0,0,914,2,0.439,none,0
+125.85,22,4,P2M,food_delivery,PhonePe,Android,SBI,Karnataka,0,0,490,2,0.326,none,0
+228.16,21,6,P2M,telecom_recharge,PhonePe,Android,PNB,Tamil Nadu,0,0,1414,4,0.404,none,0
+1393.2,9,6,P2P,p2p_transfer,GooglePay,Android,PNB,West Bengal,0,0,453,3,2.864,none,0
+529.59,9,1,P2P,p2p_transfer,PhonePe,Android,SBI,Rajasthan,0,1,31,3,1.552,none,0
+969.24,12,2,P2M,ecommerce,PhonePe,Android,Axis,West Bengal,0,0,284,1,1.816,none,0
+353.18,19,4,P2M,grocery,PhonePe,Android,HDFC,Karnataka,0,0,1421,2,1.236,none,0
+627.93,16,0,P2P,p2p_transfer,BankApp,Android,Axis,Maharashtra,0,0,1071,7,1.46,none,0
+144.11,22,0,P2M,grocery,PhonePe,iOS,Kotak,Karnataka,0,0,519,3,0.472,none,0
+896.47,9,4,P2P,p2p_transfer,PhonePe,Android,Union,Uttar Pradesh,0,0,3643,1,1.86,none,0
+1786.61,20,6,P2P,p2p_transfer,Paytm,Android,ICICI,Tamil Nadu,0,0,1164,3,2.117,none,0
+632.53,17,4,P2M,ecommerce,GooglePay,Android,Union,Tamil Nadu,0,1,127,3,2.404,none,0
+715.74,9,6,P2M,fuel,PhonePe,Android,PNB,Uttar Pradesh,0,0,158,7,1.705,none,0
+2029.85,10,5,P2P,p2p_transfer,Paytm,Android,Axis,Karnataka,0,0,534,2,1.514,none,0
+563.25,20,3,P2M,utilities,GooglePay,iOS,HDFC,Delhi,0,0,697,2,1.577,none,0
+1050.67,9,0,P2P,p2p_transfer,PhonePe,Android,SBI,Gujarat,1,1,39,3,3.891,account_takeover,1
+152.37,11,1,P2P,p2p_transfer,PhonePe,Android,Canara,West Bengal,0,0,1005,3,0.723,none,0
+236.89,8,3,P2M,food_delivery,GooglePay,Android,Canara,Gujarat,0,1,58,1,0.4,none,0
+1544.23,20,6,P2P,p2p_transfer,GooglePay,Android,Axis,Kerala,0,0,654,2,2.263,none,0
+145.16,14,5,P2M,gaming,BankApp,Android,Axis,Other,0,1,222,1,0.765,none,0
+782.23,23,3,P2M,travel,GooglePay,iOS,Canara,Telangana,0,0,1643,4,1.776,none,0
+674.89,18,1,P2P,p2p_transfer,GooglePay,Android,Yes,Rajasthan,0,0,674,5,1.071,none,0
+810.05,11,6,P2M,ecommerce,GooglePay,Android,Axis,Other,0,0,2293,2,2.496,none,0
+348.84,16,0,P2M,fuel,PhonePe,Android,HDFC,Other,0,0,3126,3,0.847,none,0
+47.42,18,4,P2M,telecom_recharge,GooglePay,Android,SBI,Telangana,0,0,6580,2,0.497,none,0
+427.68,15,3,P2M,entertainment,PhonePe,Android,HDFC,Gujarat,0,1,230,2,0.817,none,0
+110.11,11,6,P2M,grocery,PhonePe,Android,HDFC,Maharashtra,0,0,858,3,0.56,none,0
+385.13,10,2,P2M,food_delivery,GooglePay,Android,BoB,Delhi,0,1,44,2,0.539,none,0
+290.1,10,5,P2P,p2p_transfer,BHIM,iOS,Kotak,Gujarat,0,0,684,4,1.203,none,0
+189.11,20,4,P2P,p2p_transfer,PhonePe,Android,SBI,Other,0,0,1261,4,0.657,none,0
+6076.97,21,6,P2M,travel,GooglePay,Android,SBI,Maharashtra,0,0,387,2,6.184,none,0
+846.72,21,5,P2M,ecommerce,PhonePe,iOS,BoB,Uttar Pradesh,1,1,1011,4,1.945,account_takeover,1
+27114.92,12,4,P2M,ecommerce,GooglePay,Android,SBI,Tamil Nadu,1,1,17,4,17.994,account_takeover,1
+55.85,19,5,P2M,telecom_recharge,PhonePe,Android,SBI,Rajasthan,0,0,465,3,0.245,none,0
+179.19,13,2,P2P,p2p_transfer,PhonePe,iOS,Axis,Telangana,0,0,2777,1,0.46,none,0
+256.46,13,0,P2M,telecom_recharge,GooglePay,Android,Yes,Telangana,0,1,41,5,0.498,none,0
+127.25,11,4,P2M,grocery,BHIM,iOS,PNB,Other,0,0,505,1,0.271,none,0
+750.1,20,0,P2M,ecommerce,GooglePay,Android,HDFC,Telangana,0,0,992,2,1.843,none,0
+128.77,17,4,P2M,grocery,BankApp,Android,SBI,Rajasthan,0,0,555,2,0.274,none,0
+2499.95,9,6,P2P,p2p_transfer,GooglePay,iOS,Yes,Maharashtra,0,0,617,2,2.818,none,0
+1274.02,18,3,P2M,utilities,PhonePe,Android,PNB,Maharashtra,0,0,178,1,1.844,none,0
+1687.12,1,6,P2P,p2p_transfer,Paytm,Android,SBI,Karnataka,1,1,165,6,6.282,account_takeover,1
+1402.35,3,0,P2P,p2p_transfer,PhonePe,Android,Canara,Maharashtra,1,1,33,4,2.88,account_takeover,1
+279.32,13,5,P2P,p2p_transfer,PhonePe,Android,HDFC,Other,1,1,21,4,0.8,account_takeover,1
+438.62,19,2,P2P,p2p_transfer,PhonePe,Android,ICICI,Other,1,0,197,2,0.609,none,0
+592.82,21,1,P2P,p2p_transfer,BHIM,iOS,Yes,Maharashtra,0,0,341,1,0.886,none,0
+138.5,15,4,P2P,p2p_transfer,PhonePe,Android,Axis,Tamil Nadu,0,0,304,4,0.509,none,0
+75.4,8,6,P2M,grocery,PhonePe,iOS,BoB,Maharashtra,0,0,646,2,0.776,none,0
+373.66,9,5,P2M,healthcare,GooglePay,iOS,HDFC,Gujarat,0,0,642,1,1.034,none,0
+856.18,16,1,P2M,utilities,PhonePe,Android,Yes,Tamil Nadu,0,0,466,2,1.325,none,0
+257.82,19,4,P2P,p2p_transfer,Paytm,Android,PNB,Other,0,0,986,4,0.274,none,0
+390.58,21,5,P2P,p2p_transfer,PhonePe,Android,Axis,Gujarat,0,0,587,2,1.565,none,0
+22.06,17,5,P2P,p2p_transfer,PhonePe,Android,BoB,Tamil Nadu,0,0,1388,1,0.257,none,0
+5191.92,10,6,P2M,travel,GooglePay,Android,ICICI,Rajasthan,1,1,93,4,5.749,account_takeover,1
+303.2,11,4,P2M,telecom_recharge,GooglePay,Android,SBI,Other,0,0,418,1,0.365,none,0
+1936.09,12,4,P2P,p2p_transfer,PhonePe,Android,HDFC,Uttar Pradesh,1,1,28,5,3.609,account_takeover,1
+2515.64,4,3,P2P,p2p_transfer,Paytm,Android,Union,Gujarat,1,1,80,4,2.898,account_takeover,1
+750.27,22,2,P2M,utilities,GooglePay,Android,PNB,Other,0,0,1172,2,1.437,none,0
+141.71,12,5,P2M,utilities,GooglePay,Android,SBI,Maharashtra,0,0,529,3,0.847,none,0
+242.97,11,6,P2M,food_delivery,GooglePay,Android,SBI,West Bengal,0,0,884,1,0.489,none,0
+904.37,15,0,P2P,p2p_transfer,PhonePe,Android,HDFC,Delhi,0,0,535,3,1.323,none,0
+62.87,13,6,P2P,p2p_transfer,PhonePe,Android,Canara,Delhi,0,0,400,3,0.649,none,0
+228.04,16,6,P2M,food_delivery,PhonePe,Android,ICICI,Karnataka,0,0,847,2,0.28,none,0
+254.18,9,5,P2P,p2p_transfer,GooglePay,Android,Canara,Maharashtra,0,1,69,3,0.698,none,0
+1719.72,16,0,P2M,entertainment,PhonePe,Android,Yes,Maharashtra,0,1,152,5,2.164,none,0
+115.13,10,3,P2M,fuel,GooglePay,Android,Yes,Tamil Nadu,0,0,210,5,1.024,none,0
+225.25,9,2,P2M,food_delivery,GooglePay,Android,HDFC,Karnataka,0,0,1961,2,0.552,none,0
+137.62,16,5,P2M,food_delivery,GooglePay,Android,ICICI,Delhi,0,0,841,2,0.337,none,0
+619.9,19,0,P2M,food_delivery,PhonePe,Android,Yes,Gujarat,0,1,37,3,0.862,none,0
+49.33,22,1,P2M,healthcare,GooglePay,Android,SBI,West Bengal,0,0,337,4,0.951,none,0
+361.5,8,6,P2M,utilities,PhonePe,Android,Kotak,Delhi,0,0,280,2,0.796,none,0
+90.82,21,0,P2M,food_delivery,Paytm,Android,Canara,Tamil Nadu,0,0,170,1,0.409,none,0
+632.9,17,4,P2M,telecom_recharge,PhonePe,Android,BoB,Karnataka,0,1,398,3,0.444,none,0
+490.36,19,4,P2M,utilities,GooglePay,Android,Axis,Tamil Nadu,0,1,159,3,0.718,none,0
+478.78,14,2,P2M,food_delivery,Paytm,Android,HDFC,Karnataka,0,0,757,2,0.29,none,0
+370.78,19,4,P2M,food_delivery,PhonePe,Android,HDFC,Karnataka,0,0,479,4,0.99,none,0
+827.68,20,3,P2M,grocery,PhonePe,Android,Axis,Uttar Pradesh,0,0,204,10,2.076,none,0
+283.11,22,0,P2M,healthcare,PhonePe,Android,ICICI,Maharashtra,0,0,1676,2,1.715,none,0
+1210.8,21,6,P2P,p2p_transfer,PhonePe,Android,SBI,West Bengal,0,0,449,4,2.789,none,0
+171.53,15,3,P2P,p2p_transfer,GooglePay,Android,SBI,Karnataka,0,0,782,3,0.468,none,0
+1357.69,14,4,P2M,healthcare,PhonePe,iOS,SBI,Maharashtra,0,0,331,1,0.967,none,0
+380.27,10,4,P2P,p2p_transfer,PhonePe,Android,ICICI,Tamil Nadu,0,0,354,3,0.756,none,0
+2349.77,10,0,P2P,p2p_transfer,PhonePe,Android,PNB,Maharashtra,0,0,998,3,3.129,none,0
+536.91,14,6,P2M,grocery,PhonePe,Android,HDFC,West Bengal,0,0,1438,5,0.805,none,0
+292.21,14,0,P2M,food_delivery,Paytm,Android,SBI,Other,0,1,147,1,0.528,none,0
+518.91,6,4,P2M,fuel,PhonePe,Android,SBI,Karnataka,0,1,101,3,0.858,none,0
+441.39,10,1,P2P,p2p_transfer,Paytm,iOS,SBI,Maharashtra,0,0,483,3,0.322,none,0
+727.26,17,3,P2M,utilities,PhonePe,Android,ICICI,Delhi,0,0,852,1,1.133,none,0
+265.07,13,3,P2M,grocery,GooglePay,Android,ICICI,Rajasthan,0,0,773,2,0.743,none,0
+184.22,10,4,P2M,grocery,GooglePay,Android,Union,Gujarat,0,0,535,4,1.098,none,0
+698.67,17,4,P2P,p2p_transfer,PhonePe,Android,BoB,Uttar Pradesh,0,0,7471,3,0.516,none,0
+612.96,22,5,P2M,gaming,PhonePe,Android,Axis,Maharashtra,0,0,438,1,0.799,none,0
+1572.27,9,5,P2P,p2p_transfer,PhonePe,Android,ICICI,Telangana,0,0,2329,5,1.989,none,0
+208.73,13,6,P2M,grocery,PhonePe,Android,SBI,Uttar Pradesh,0,0,1434,8,0.607,none,0
+561.27,14,6,P2M,healthcare,GooglePay,Android,SBI,Other,0,0,696,5,1.791,none,0
+502.26,19,1,P2P,p2p_transfer,PhonePe,Android,ICICI,Delhi,0,0,664,2,1.273,none,0
+1524.23,18,0,P2M,grocery,PhonePe,Android,SBI,Gujarat,0,0,498,1,1.239,none,0
+111.45,10,3,P2P,p2p_transfer,PhonePe,Android,Canara,Uttar Pradesh,0,0,564,5,0.377,none,0
+420.63,22,5,P2M,entertainment,PhonePe,Android,Union,Telangana,0,1,247,1,0.6,none,0
+1107.32,23,0,P2M,education,GooglePay,Android,Canara,Uttar Pradesh,0,1,572,2,3.434,none,0
+2384.39,2,2,P2P,p2p_transfer,GooglePay,Android,Canara,Karnataka,0,1,245,2,10.043,account_takeover,1
+1021.8,21,2,P2P,p2p_transfer,PhonePe,Android,SBI,Rajasthan,1,1,187,4,1.442,account_takeover,1
+2234.97,10,2,P2M,ecommerce,PhonePe,Android,Axis,Uttar Pradesh,0,0,989,3,3.369,none,0
+534.45,10,6,P2M,ecommerce,BHIM,iOS,SBI,Uttar Pradesh,0,0,948,3,1.076,none,0
+161.62,12,5,P2M,grocery,Paytm,Android,ICICI,Maharashtra,0,0,2789,4,0.602,none,0
+176.13,18,2,P2P,p2p_transfer,PhonePe,Android,ICICI,Uttar Pradesh,0,0,969,2,0.614,none,0
+482.44,18,2,P2M,fuel,Paytm,iOS,BoB,Uttar Pradesh,0,1,183,2,1.183,none,0
+384.39,18,4,P2P,p2p_transfer,GooglePay,Android,SBI,Uttar Pradesh,0,0,740,2,0.696,none,0
+610.91,12,1,P2M,utilities,GooglePay,Android,Yes,Gujarat,0,0,362,5,1.554,none,0
+750.16,16,4,P2M,fuel,BankApp,Android,SBI,Other,0,0,1040,2,1.452,none,0
+14572.62,16,6,P2P,p2p_transfer,PhonePe,Android,HDFC,Delhi,1,1,112,2,13.36,account_takeover,1
+414.08,10,0,P2P,p2p_transfer,Paytm,Android,ICICI,Tamil Nadu,0,0,235,1,0.79,none,0
+221.15,12,5,P2M,food_delivery,GooglePay,Android,SBI,Uttar Pradesh,0,1,87,2,0.513,none,0
+2031.15,21,2,P2P,p2p_transfer,GooglePay,Android,PNB,Gujarat,0,1,189,5,2.165,none,0
+617.47,18,1,P2M,food_delivery,PhonePe,Android,SBI,Maharashtra,0,0,752,2,1.294,none,0
+1141.08,20,5,P2M,ecommerce,PhonePe,iOS,PNB,Tamil Nadu,0,0,332,2,4.882,none,0
+206.72,18,1,P2M,utilities,PhonePe,Android,Yes,Rajasthan,0,1,23,3,0.765,none,0
+1494.69,9,5,P2M,utilities,PhonePe,Android,SBI,Uttar Pradesh,0,0,741,1,1.312,none,0
+266.67,14,6,P2P,p2p_transfer,PhonePe,iOS,BoB,Uttar Pradesh,0,1,33,5,0.612,none,0
+2007.54,11,6,P2M,fuel,GooglePay,Android,SBI,Kerala,0,0,1088,1,2.55,none,0
+342.54,1,6,P2P,p2p_transfer,PhonePe,Android,SBI,Telangana,0,0,267,4,0.263,none,0
+81.41,13,0,P2M,food_delivery,GooglePay,Android,Axis,Uttar Pradesh,0,1,51,4,0.349,none,0
+1358.3,13,6,P2P,p2p_transfer,GooglePay,Android,BoB,Karnataka,1,1,126,2,1.946,account_takeover,1
+902.8,13,0,P2M,telecom_recharge,PhonePe,Android,Canara,Maharashtra,0,0,6478,5,2.052,none,0
+155.46,20,5,P2M,telecom_recharge,GooglePay,Android,SBI,Karnataka,0,1,84,4,1.382,none,0
+242.72,17,4,P2M,fuel,GooglePay,Android,ICICI,Kerala,0,0,199,2,1.466,none,0
+2075.97,11,1,P2P,p2p_transfer,PhonePe,Android,PNB,Uttar Pradesh,0,0,2621,1,1.626,none,0
+791.18,15,5,P2M,telecom_recharge,PhonePe,Android,SBI,Maharashtra,0,0,470,4,0.959,none,0
+488.0,3,5,P2P,p2p_transfer,GooglePay,iOS,SBI,Telangana,0,0,671,1,1.717,none,0
+2071.71,19,3,P2P,p2p_transfer,BHIM,Android,HDFC,Maharashtra,0,0,545,3,1.196,none,0
+681.25,18,3,P2P,p2p_transfer,GooglePay,Android,Yes,Kerala,0,1,132,1,1.969,none,0
+879.01,13,1,P2M,healthcare,PhonePe,Android,SBI,Kerala,0,0,799,6,1.596,none,0
+289.26,8,6,P2M,ecommerce,GooglePay,iOS,Axis,Delhi,0,0,2185,4,0.962,none,0
+122.82,9,1,P2P,p2p_transfer,PhonePe,iOS,SBI,Other,0,0,610,5,0.439,none,0
+163.26,15,5,P2P,p2p_transfer,BankApp,Android,ICICI,Other,0,0,1643,2,0.638,none,0
+185.47,13,6,P2M,ecommerce,PhonePe,Android,ICICI,Telangana,0,0,1317,1,0.935,none,0
+849.93,17,2,P2P,p2p_transfer,GooglePay,Android,HDFC,Gujarat,0,0,392,3,3.319,none,0
+775.87,10,5,P2M,grocery,PhonePe,Android,HDFC,Maharashtra,0,0,2461,1,0.739,none,0
+408.27,9,0,P2M,ecommerce,Paytm,iOS,ICICI,Delhi,1,0,558,1,1.721,none,0
+496.82,19,4,P2M,gaming,PhonePe,Android,SBI,Gujarat,0,1,368,1,0.593,none,0
+878.69,0,2,P2P,p2p_transfer,PhonePe,iOS,Axis,West Bengal,1,1,23,7,1.657,account_takeover,1
+1003.05,13,3,P2P,p2p_transfer,GooglePay,Android,ICICI,Uttar Pradesh,0,0,141,4,0.843,none,0
+602.36,11,3,P2P,p2p_transfer,PhonePe,Android,SBI,Rajasthan,0,0,1153,1,1.748,none,0
+1878.7,21,5,P2P,p2p_transfer,GooglePay,Android,HDFC,Tamil Nadu,0,0,221,3,2.572,none,0
+85.6,20,2,P2M,grocery,GooglePay,Android,HDFC,Rajasthan,0,0,3188,1,0.256,none,0
+1280.47,22,5,P2M,education,GooglePay,Android,Yes,Maharashtra,0,0,1071,2,1.866,none,0
+95.4,9,6,P2M,grocery,Paytm,iOS,Axis,Karnataka,0,0,629,3,1.226,none,0
+105.14,18,6,P2M,food_delivery,GooglePay,Android,Axis,Kerala,0,0,425,1,0.346,none,0
+670.88,9,6,P2P,p2p_transfer,GooglePay,Android,SBI,Kerala,0,0,1444,1,0.776,none,0
+1798.55,14,4,P2P,p2p_transfer,PhonePe,iOS,Axis,Kerala,1,1,37,3,4.508,account_takeover,1
+574.13,4,5,P2P,p2p_transfer,PhonePe,Android,HDFC,Rajasthan,1,1,45,9,5.611,account_takeover,1
+419.05,21,2,P2P,p2p_transfer,BankApp,Android,Axis,Tamil Nadu,0,0,1804,2,1.976,none,0
+520.42,17,3,P2M,telecom_recharge,PhonePe,Android,Kotak,Delhi,0,0,684,2,0.534,none,0
+302.93,9,6,P2P,p2p_transfer,GooglePay,Android,ICICI,Maharashtra,0,0,113,1,0.67,none,0
+634.69,13,6,P2M,grocery,GooglePay,Android,SBI,Maharashtra,0,0,415,1,1.858,none,0
+466.27,20,5,P2M,grocery,PhonePe,Android,BoB,West Bengal,0,0,1589,1,0.854,none,0
+1471.29,3,6,P2P,p2p_transfer,PhonePe,Android,Kotak,Karnataka,1,1,137,4,2.036,account_takeover,1
+278.59,19,4,P2M,grocery,GooglePay,Android,Yes,Maharashtra,0,0,704,4,0.928,none,0
+529.18,10,4,P2M,grocery,PhonePe,Android,ICICI,Other,0,0,803,2,0.621,none,0
+1180.32,22,3,P2M,travel,PhonePe,Android,Kotak,Other,0,0,814,6,2.153,none,0
+747.44,10,4,P2M,gaming,Paytm,Android,SBI,Tamil Nadu,0,1,337,5,0.456,none,0
+569.73,6,4,P2P,p2p_transfer,GooglePay,Android,Canara,Uttar Pradesh,0,0,1606,2,1.244,none,0
+548.14,10,0,P2M,food_delivery,PhonePe,Android,SBI,Maharashtra,0,0,2362,1,0.866,none,0
+546.91,11,0,P2P,p2p_transfer,GooglePay,Android,Union,Maharashtra,0,1,39,3,1.258,none,0
+459.21,19,0,P2P,p2p_transfer,PhonePe,iOS,BoB,Delhi,0,1,609,5,2.153,none,0
+1239.4,15,3,P2M,fuel,PhonePe,iOS,Canara,Other,0,0,647,3,1.111,none,0
+1575.49,15,6,P2M,travel,GooglePay,Android,PNB,Delhi,0,0,646,4,2.651,none,0
+174.61,15,3,P2P,p2p_transfer,GooglePay,Android,Canara,Maharashtra,0,0,77,1,1.236,none,0
+406.29,12,3,P2P,p2p_transfer,GooglePay,Android,ICICI,Other,0,1,282,1,1.135,none,0
+46.65,16,2,P2M,gaming,GooglePay,Android,SBI,Other,0,0,313,3,0.774,none,0
+68.54,19,1,P2P,p2p_transfer,GooglePay,iOS,Kotak,Rajasthan,0,0,521,2,0.652,none,0
+1266.41,9,4,P2P,p2p_transfer,BHIM,Android,Axis,Delhi,0,0,1354,1,1.577,none,0
+329.83,3,5,P2P,p2p_transfer,GooglePay,Android,SBI,Maharashtra,1,1,134,5,2.637,account_takeover,1
+214.22,10,0,P2M,grocery,GooglePay,Android,Axis,Telangana,0,0,935,3,0.448,none,0
+1884.76,19,1,P2M,travel,GooglePay,Android,SBI,Karnataka,1,1,5,5,1.689,account_takeover,1
+181.08,11,0,P2P,p2p_transfer,GooglePay,iOS,SBI,Delhi,0,0,338,1,0.694,none,0
+318.23,8,6,P2P,p2p_transfer,PhonePe,Android,SBI,Other,0,0,1561,1,0.818,none,0
+1960.92,17,5,P2M,grocery,GooglePay,Android,Kotak,Other,0,0,721,3,1.148,none,0
+1798.2,17,6,P2P,p2p_transfer,Paytm,Android,HDFC,Uttar Pradesh,0,0,1253,2,1.785,none,0
+304.76,4,1,P2P,p2p_transfer,GooglePay,Android,SBI,Rajasthan,0,0,2094,4,0.799,none,0
+651.37,8,0,P2P,p2p_transfer,GooglePay,Android,HDFC,Maharashtra,0,0,2536,4,1.522,none,0
+280.79,10,5,P2M,grocery,PhonePe,Android,HDFC,Gujarat,0,0,170,1,0.933,none,0
+1010.4,10,4,P2P,p2p_transfer,GooglePay,Android,Kotak,Uttar Pradesh,0,0,632,3,0.873,none,0
+2300.1,16,4,P2P,p2p_transfer,PhonePe,Android,HDFC,Tamil Nadu,0,0,597,12,2.271,none,0
+696.77,17,0,P2P,p2p_transfer,GooglePay,Android,Kotak,Telangana,0,0,806,3,0.973,none,0
+573.92,22,5,P2M,gaming,PhonePe,Android,Canara,Kerala,0,1,81,5,0.967,account_takeover,1
+997.14,23,2,P2M,utilities,GooglePay,Android,SBI,Maharashtra,0,1,49,3,1.574,none,0
+1228.57,18,6,P2M,utilities,PhonePe,Android,ICICI,West Bengal,0,0,593,3,1.948,none,0
+200.25,15,5,P2P,p2p_transfer,GooglePay,Android,Union,Delhi,0,0,665,3,0.727,none,0
+230.67,11,4,P2M,travel,PhonePe,Android,SBI,Tamil Nadu,0,0,259,2,1.702,none,0
+2303.61,14,4,P2P,p2p_transfer,GooglePay,iOS,HDFC,Other,0,0,59,4,3.543,none,0
+101.26,20,1,P2P,p2p_transfer,GooglePay,Android,SBI,Other,0,0,149,2,0.581,none,0
+1178.95,9,1,P2P,p2p_transfer,BankApp,Android,SBI,Other,0,0,872,3,1.251,none,0
+139.86,20,1,P2P,p2p_transfer,GooglePay,Android,SBI,Delhi,0,0,1103,4,1.159,none,0
+275.45,1,6,P2M,ecommerce,PhonePe,Android,HDFC,West Bengal,0,1,112,4,1.998,none,0
+93.56,21,6,P2M,food_delivery,PhonePe,iOS,Axis,Maharashtra,0,0,641,2,0.172,none,0
+855.34,23,2,P2M,fuel,PhonePe,iOS,Canara,Maharashtra,0,0,475,1,1.683,none,0
+593.69,22,1,P2M,food_delivery,PhonePe,Android,SBI,Uttar Pradesh,0,0,476,2,0.507,none,0
+166.97,19,1,P2M,food_delivery,PhonePe,Android,SBI,Uttar Pradesh,0,0,1276,2,0.896,none,0
+2011.4,16,6,P2M,healthcare,Paytm,Android,Kotak,Maharashtra,0,0,440,2,2.782,none,0
+454.64,0,3,P2P,p2p_transfer,BHIM,Android,HDFC,Gujarat,0,0,1718,2,0.759,none,0
+159.96,13,5,P2M,food_delivery,GooglePay,iOS,Axis,Delhi,0,0,135,1,0.57,none,0
+264.36,13,0,P2P,p2p_transfer,BankApp,Android,Axis,Uttar Pradesh,0,0,1356,7,1.088,none,0
+2287.9,11,0,P2M,ecommerce,PhonePe,Android,HDFC,Telangana,0,1,46,5,6.769,none,0
+1223.14,16,0,P2M,ecommerce,PhonePe,Android,Union,Delhi,0,0,529,1,0.854,none,0
+1317.36,11,2,P2M,travel,PhonePe,iOS,ICICI,Other,1,1,101,4,5.335,account_takeover,1
+136.04,11,1,P2M,healthcare,PhonePe,Android,HDFC,Gujarat,0,0,230,2,1.224,none,0
+1637.66,8,0,P2M,travel,PhonePe,iOS,Axis,Gujarat,0,0,1445,1,2.353,none,0
+639.2,20,0,P2P,p2p_transfer,PhonePe,Android,Axis,West Bengal,0,1,163,3,3.724,account_takeover,1
+105.85,12,6,P2P,p2p_transfer,GooglePay,Android,HDFC,Gujarat,0,0,801,1,0.812,none,0
+1486.41,19,2,P2M,fuel,BankApp,iOS,Yes,Other,0,0,450,2,0.998,none,0
+178.94,20,1,P2P,p2p_transfer,GooglePay,Android,ICICI,Kerala,0,0,215,1,0.901,none,0
+425.37,21,1,P2M,grocery,PhonePe,iOS,Kotak,Delhi,0,0,1025,3,1.585,none,0
+332.66,9,3,P2M,fuel,Paytm,Android,Axis,Tamil Nadu,0,0,412,2,0.819,none,0
+4592.05,2,0,P2P,p2p_transfer,GooglePay,Android,Axis,Uttar Pradesh,0,1,196,6,22.685,account_takeover,1
+163.5,22,0,P2M,grocery,PhonePe,Android,SBI,Other,0,0,719,2,0.778,none,0
+3622.54,12,1,P2M,grocery,GooglePay,iOS,SBI,Karnataka,0,0,3554,4,0.63,none,0
+1241.43,8,2,P2M,entertainment,PhonePe,iOS,Kotak,Rajasthan,0,0,381,2,2.096,none,0
+491.47,22,2,P2P,p2p_transfer,GooglePay,Android,SBI,Karnataka,0,0,247,2,1.304,none,0
+908.44,21,0,P2P,p2p_transfer,GooglePay,Android,ICICI,Rajasthan,0,1,6,5,5.319,account_takeover,1
+115.84,10,1,P2M,food_delivery,GooglePay,Android,PNB,Kerala,0,0,1336,5,0.423,none,0
+119.66,15,4,P2M,food_delivery,GooglePay,Android,Yes,Delhi,1,0,366,1,0.665,none,0
